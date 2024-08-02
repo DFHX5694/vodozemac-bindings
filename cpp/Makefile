@@ -49,6 +49,7 @@ group-session-test: rust-lib tests/group_session.cpp
 		-pthread -std=c++17	\
 		tests/group_session.cpp	\
 		-lgtest_main -lgtest 	\
+		-lolm -lboost_json	\
 		-lpthread 		\
 		-I ../target/cxxbridge 	\
 		-L ../target/debug/ 	\

@@ -1,4 +1,6 @@
 #include "../../target/cxxbridge/vodozemac/src/lib.rs.h"
+#include <olm/outbound_group_session.h>
+#include <olm/inbound_group_session.h>
 #include "gtest/gtest.h"
 #include "util.hpp"
 
@@ -20,6 +22,32 @@ SessionCreationResult create_session() {
   };
 
   return ret;
+}
+
+struct LibolmSessionCreationResult {
+  std::vector<uint8_t> outbound_data;
+  OlmOutboundGroupSession *outbound;
+  std::vector<uint8_t> inbound_data;
+  OlmInboundGroupSession *inbound;
+};
+
+LibolmSessionCreationResult create_libolm_session() {
+  LibolmSessionCreationResult res{
+    std::vector<uint8_t>(olm_outbound_group_session_size()),
+    0,
+    std::vector<uint8_t>(olm_inbound_group_session_size()),
+    0,
+  };
+
+  res.outbound = olm_outbound_group_session(res.outbound_data.data());
+  auto random = gen_random(olm_init_outbound_group_session_random_length(res.outbound));
+  check_olm_error(olm_init_outbound_group_session(res.outbound, random.data(), random.size()));
+  auto session_key = std::vector<uint8_t>(olm_outbound_group_session_key_length(res.outbound));
+  check_olm_error(olm_outbound_group_session_key(res.outbound, session_key.data(), session_key.size()));
+
+  res.inbound = olm_inbound_group_session(res.inbound_data.data());
+  olm_init_inbound_group_session(res.inbound, session_key.data(), session_key.size());
+  return res;
 }
 
 TEST(GroupSessionTest, Creation) {
@@ -55,6 +83,23 @@ TEST(GroupSessionTest, Pickle) {
   EXPECT_EQ(session->message_index(), unpickled->message_index());
 }
 
+TEST(GroupSessionTest, PickleLibolm) {
+  auto [_1, outbound, _2, inbound] = create_libolm_session();
+
+  auto pickle = std::string(olm_pickle_outbound_group_session_length(outbound), '\0');
+  check_olm_error(olm_pickle_outbound_group_session(outbound, OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size(), pickle.data(), pickle.size()));
+  auto unpickled = megolm::group_session_from_libolm_pickle(String(pickle), Slice<const unsigned char>(OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size()));
+
+  auto session_id = std::vector<uint8_t>(olm_outbound_group_session_id_length(outbound));
+  check_olm_error(olm_outbound_group_session_id(outbound, session_id.data(), session_id.size()));
+
+  ASSERT_EQ(as_std_string(session_id), static_cast<std::string>(unpickled->session_id()));
+
+  auto message_index = olm_outbound_group_session_message_index(outbound);
+
+  EXPECT_EQ(message_index, unpickled->message_index());
+}
+
 TEST(GroupSessionTest, PickleInbound) {
   auto [outbound, inbound] = create_session();
 
@@ -64,6 +109,25 @@ TEST(GroupSessionTest, PickleInbound) {
 
   ASSERT_STREQ(inbound->session_id().c_str(), unpickled->session_id().c_str());
   EXPECT_EQ(inbound->first_known_index(), unpickled->first_known_index());
+}
+
+TEST(GroupSessionTest, PickleInboundLibolm) {
+  auto [_1, outbound, _2, inbound] = create_libolm_session();
+
+  auto pickle = std::string(olm_pickle_inbound_group_session_length(inbound), '\0');
+  check_olm_error(olm_pickle_inbound_group_session(inbound, OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size(), pickle.data(), pickle.size()));
+
+  auto unpickled =
+      megolm::inbound_group_session_from_libolm_pickle(pickle, Slice<const unsigned char>(OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size()));
+
+  auto session_id = std::vector<uint8_t>(olm_inbound_group_session_id_length(inbound));
+  check_olm_error(olm_inbound_group_session_id(inbound, session_id.data(), session_id.size()));
+
+  ASSERT_EQ(as_std_string(session_id), static_cast<std::string>(unpickled->session_id()));
+
+  auto first_known_index = olm_inbound_group_session_first_known_index(inbound);
+
+  EXPECT_EQ(first_known_index, unpickled->first_known_index());
 }
 
 TEST(GroupSessionTest, UnpicklingFail) {
