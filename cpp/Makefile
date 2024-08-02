@@ -22,6 +22,7 @@ session-test: rust-lib tests/session.cpp
 		-pthread -std=c++17	\
 		tests/session.cpp 	\
 		-lgtest_main -lgtest 	\
+		-lolm -lboost_json	\
 		-lpthread 		\
 		-I ../target/cxxbridge 	\
 		-L ../target/debug/ 	\

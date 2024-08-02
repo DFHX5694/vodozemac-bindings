@@ -59,11 +59,8 @@ TEST(AccountTest, PickleTest) {
 }
 
 TEST(AccountTest, PickleFromLibolmTest) {
-  auto data = std::vector<uint8_t>(olm_account_size());
-  auto alice = olm_account(data.data());
-  auto random = gen_random(olm_create_account_random_length(alice));
-  check_olm_error(olm_create_account(alice, random.data(), random.size()));
-  random = gen_random(olm_account_generate_one_time_keys_random_length(alice, 10));
+  auto [data, alice] = new_olm_account();
+  auto random = gen_random(olm_account_generate_one_time_keys_random_length(alice, 10));
   check_olm_error(olm_account_generate_one_time_keys(alice, 10, random.data(), random.size()));
 
   auto pickle = std::string(olm_pickle_account_length(alice), '\0');

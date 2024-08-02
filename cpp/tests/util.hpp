@@ -28,3 +28,13 @@ template<class T>
 {
   return std::string(range.begin(), range.end());
 }
+
+std::pair<std::vector<uint8_t>, OlmAccount *> new_olm_account()
+{
+  auto data = std::vector<uint8_t>(olm_account_size());
+  auto account = olm_account(data.data());
+  auto random = gen_random(olm_create_account_random_length(account));
+  check_olm_error(olm_create_account(account, random.data(), random.size()));
+
+  return {std::move(data), account};
+}
