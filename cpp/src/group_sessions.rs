@@ -45,7 +45,7 @@ impl ExportedSessionKey {
 
 impl GroupSession {
     fn new() -> Self {
-        Self(vodozemac::megolm::GroupSession::new())
+        Self(vodozemac::megolm::GroupSession::new(vodozemac::megolm::SessionConfig::version_1()))
     }
 
     pub fn session_id(&self) -> String {
@@ -94,12 +94,13 @@ pub fn inbound_group_session_from_pickle(
 
 impl InboundGroupSession {
     fn new(session_key: &SessionKey) -> Self {
-        Self(vodozemac::megolm::InboundGroupSession::new(&session_key.0))
+        Self(vodozemac::megolm::InboundGroupSession::new(&session_key.0, vodozemac::megolm::SessionConfig::version_1()))
     }
 
     fn import(session_key: &ExportedSessionKey) -> Self {
         Self(vodozemac::megolm::InboundGroupSession::import(
             &session_key.0,
+            vodozemac::megolm::SessionConfig::version_1(),
         ))
     }
 

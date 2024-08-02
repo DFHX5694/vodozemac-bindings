@@ -61,7 +61,7 @@ impl Account {
     }
 
     pub fn generate_one_time_keys(&mut self, count: usize) {
-        self.0.generate_one_time_keys(count)
+        self.0.generate_one_time_keys(count);
     }
 
     pub fn one_time_keys(&self) -> Vec<OneTimeKey> {
@@ -76,7 +76,7 @@ impl Account {
     }
 
     pub fn generate_fallback_key(&mut self) {
-        self.0.generate_fallback_key()
+        self.0.generate_fallback_key();
     }
 
     pub fn fallback_key(&self) -> Vec<OneTimeKey> {
@@ -105,7 +105,7 @@ impl Account {
     ) -> Result<Box<Session>, vodozemac::KeyError> {
         let session = self
             .0
-            .create_outbound_session(identity_key.0, one_time_key.0);
+            .create_outbound_session(vodozemac::olm::SessionConfig::version_1(), identity_key.0, one_time_key.0);
 
         Ok(Box::new(Session(session)))
     }

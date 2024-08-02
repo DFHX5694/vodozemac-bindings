@@ -15,7 +15,7 @@ impl Session {
         OlmMessage(self.0.encrypt(plaintext)).into()
     }
 
-    pub fn decrypt(&mut self, message: &OlmMessage) -> Result<String, anyhow::Error> {
+    pub fn decrypt(&mut self, message: &OlmMessage) -> Result<Vec<u8>, anyhow::Error> {
         Ok(self.0.decrypt(&message.0)?)
     }
 

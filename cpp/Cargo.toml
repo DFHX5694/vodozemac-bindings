@@ -13,7 +13,7 @@ cxx = "1.0"
 
 [dependencies.vodozemac]
 git = "https://github.com/matrix-org/vodozemac/"
-rev = "ce21316266fabaa3717363d5f410fb7943ecdb10"
+rev = "0.7.0"
 
 [build-dependencies]
 cxx-build = "1.0"

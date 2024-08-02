@@ -29,7 +29,7 @@ mod ffi {
     #[namespace = "olm"]
     pub struct InboundCreationResult {
         pub session: Box<Session>,
-        pub plaintext: String,
+        pub plaintext: Vec<u8>,
     }
 
     #[namespace = "olm"]
@@ -88,7 +88,7 @@ mod ffi {
         fn session_keys(self: &Session) -> SessionKeys;
         fn session_matches(self: &Session, message: &OlmMessage) -> bool;
         fn encrypt(self: &mut Session, plaintext: &str) -> Box<OlmMessage>;
-        fn decrypt(self: &mut Session, message: &OlmMessage) -> Result<String>;
+        fn decrypt(self: &mut Session, message: &OlmMessage) -> Result<Vec<u8>>;
         fn session_from_pickle(pickle: &str, pickle_key: &[u8; 32]) -> Result<Box<Session>>;
         fn pickle(self: &Session, pickle_key: &[u8; 32]) -> String;
 
@@ -99,7 +99,7 @@ mod ffi {
 
     #[namespace = "megolm"]
     struct DecryptedMessage {
-        plaintext: String,
+        plaintext: Vec<u8>,
         message_index: u32,
     }
 
