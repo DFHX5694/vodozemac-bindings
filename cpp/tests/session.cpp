@@ -1,9 +1,8 @@
 #include "../../target/cxxbridge/vodozemac/src/lib.rs.h"
 #include "gtest/gtest.h"
+#include "util.hpp"
 
 using namespace rust;
-
-std::array<uint8_t, 32> PICKLE_KEY = {};
 
 struct SessionCreationResult {
   Box<olm::Account> alice;
@@ -81,7 +80,7 @@ TEST(SessionTest, Encryption) {
   EXPECT_STREQ(session->session_id().c_str(),
                bob_session->session_id().c_str());
 
-  EXPECT_STREQ(plaintext, decrypted.c_str());
+  EXPECT_EQ(std::string(plaintext), as_std_string(decrypted));
 }
 
 TEST(SessionTest, InvalidDecryption) {
@@ -107,14 +106,14 @@ TEST(SessionTest, MultipleMessageDecryption) {
   EXPECT_STREQ(session->session_id().c_str(),
                bob_session->session_id().c_str());
 
-  EXPECT_STREQ(plaintext, decrypted.c_str());
+  EXPECT_EQ(std::string(plaintext), as_std_string(decrypted));
 
   plaintext = "Grumble grumble";
 
   message = bob_session->encrypt(plaintext);
   decrypted = session->decrypt(*message);
 
-  EXPECT_STREQ(plaintext, decrypted.c_str());
+  EXPECT_EQ(std::string(plaintext), as_std_string(decrypted));
 }
 
 TEST(SessionTest, PreKeyMatches) {

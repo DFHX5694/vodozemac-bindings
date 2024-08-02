@@ -1,9 +1,8 @@
 #include "../../target/cxxbridge/vodozemac/src/lib.rs.h"
 #include "gtest/gtest.h"
+#include "util.hpp"
 
 using namespace rust;
-
-std::array<uint8_t, 32> PICKLE_KEY = {};
 
 struct SessionCreationResult {
   Box<megolm::GroupSession> outbound;
@@ -88,14 +87,14 @@ TEST(GroupSessionTest, Encryption) {
   auto message = outbound->encrypt(plaintext);
   auto decrypted = inbound->decrypt(*message);
 
-  EXPECT_STREQ(decrypted.plaintext.c_str(), plaintext);
+  EXPECT_EQ(as_std_string(decrypted.plaintext), std::string(plaintext));
   EXPECT_EQ(decrypted.message_index, 0);
 
   plaintext = "Another secret";
   message = outbound->encrypt(plaintext);
   decrypted = inbound->decrypt(*message);
 
-  EXPECT_STREQ(decrypted.plaintext.c_str(), plaintext);
+  EXPECT_EQ(as_std_string(decrypted.plaintext), std::string(plaintext));
   EXPECT_EQ(decrypted.message_index, 1);
 }
 
@@ -109,13 +108,13 @@ TEST(GroupSessionTest, SessionExport) {
   auto message = outbound->encrypt(plaintext);
   auto decrypted = imported->decrypt(*message);
 
-  EXPECT_STREQ(decrypted.plaintext.c_str(), plaintext);
+  EXPECT_EQ(as_std_string(decrypted.plaintext), std::string(plaintext));
   EXPECT_EQ(decrypted.message_index, 0);
 
   plaintext = "Another secret";
   message = outbound->encrypt(plaintext);
   decrypted = imported->decrypt(*message);
 
-  EXPECT_STREQ(decrypted.plaintext.c_str(), plaintext);
+  EXPECT_EQ(as_std_string(decrypted.plaintext), std::string(plaintext));
   EXPECT_EQ(decrypted.message_index, 1);
 }
