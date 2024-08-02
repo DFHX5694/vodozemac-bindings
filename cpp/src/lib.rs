@@ -4,7 +4,7 @@ mod sas;
 mod session;
 mod types;
 
-use account::{account_from_pickle, new_account, olm_message_from_parts, Account, OlmMessage};
+use account::{account_from_pickle, account_from_libolm_pickle, new_account, olm_message_from_parts, Account, OlmMessage};
 use group_sessions::{
     exported_session_key_from_base64, group_session_from_pickle, import_inbound_group_session,
     inbound_group_session_from_pickle, megolm_message_from_base64, new_group_session,
@@ -71,6 +71,7 @@ mod ffi {
         fn mark_keys_as_published(self: &mut Account);
         fn max_number_of_one_time_keys(self: &Account) -> usize;
         fn account_from_pickle(pickle: &str, pickle_key: &[u8; 32]) -> Result<Box<Account>>;
+        fn account_from_libolm_pickle(pickle: &str, pickle_key: &[u8]) -> Result<Box<Account>>;
         fn pickle(self: &Account, pickle_key: &[u8; 32]) -> String;
         fn create_outbound_session(
             self: &Account,

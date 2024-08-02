@@ -7,13 +7,14 @@ account-test: rust-lib tests/account.cpp
 		-pthread -std=c++17	\
 		tests/account.cpp 	\
 		-lgtest_main -lgtest 	\
+		-lolm -lboost_json	\
 		-lpthread 		\
 		-I ../target/cxxbridge 	\
 		-L ../target/debug/ 	\
 		-l vodozemac 		\
 		-ldl			\
 		-o account-test
-	
+
 
 session-test: rust-lib tests/session.cpp
 	g++ 				\

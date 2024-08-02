@@ -38,6 +38,14 @@ pub fn account_from_pickle(
     Ok(Account(vodozemac::olm::Account::from_pickle(pickle)).into())
 }
 
+pub fn account_from_libolm_pickle(
+    pickle: &str,
+    pickle_key: &[u8],
+) -> Result<Box<Account>, anyhow::Error> {
+    let res = vodozemac::olm::Account::from_libolm_pickle(pickle, pickle_key)?;
+    Ok(Account(res).into())
+}
+
 impl From<vodozemac::olm::InboundCreationResult> for InboundCreationResult {
     fn from(v: vodozemac::olm::InboundCreationResult) -> Self {
         Self {

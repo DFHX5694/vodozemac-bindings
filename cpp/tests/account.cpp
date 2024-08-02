@@ -1,9 +1,12 @@
 #include "../../target/cxxbridge/vodozemac/src/lib.rs.h"
+#include <string>
+#include <unordered_set>
+#include <olm/olm.h>
+#include <boost/json.hpp>
 #include "gtest/gtest.h"
+#include "util.hpp"
 
 using namespace rust;
-
-std::array<uint8_t, 32> PICKLE_KEY = {};
 
 TEST(AccountTest, AccountCreation) {
   auto alice = olm::new_account();
@@ -53,4 +56,50 @@ TEST(AccountTest, PickleTest) {
 
   EXPECT_EQ(alice->curve25519_key()->to_base64(),
             unpickled->curve25519_key()->to_base64());
+}
+
+TEST(AccountTest, PickleFromLibolmTest) {
+  auto data = std::vector<uint8_t>(olm_account_size());
+  auto alice = olm_account(data.data());
+  auto random = gen_random(olm_create_account_random_length(alice));
+  check_olm_error(olm_create_account(alice, random.data(), random.size()));
+  random = gen_random(olm_account_generate_one_time_keys_random_length(alice, 10));
+  check_olm_error(olm_account_generate_one_time_keys(alice, 10, random.data(), random.size()));
+
+  auto pickle = std::string(olm_pickle_account_length(alice), '\0');
+  check_olm_error(olm_pickle_account(alice, OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size(), pickle.data(), pickle.size()));
+
+  auto unpickled = olm::account_from_libolm_pickle(pickle, Slice<const unsigned char>(OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size()));
+
+  {
+    auto identity_keys = std::string(olm_account_identity_keys_length(alice), '\0');
+    check_olm_error(olm_account_identity_keys(alice, identity_keys.data(), identity_keys.size()));
+    auto parsed_keys = boost::json::parse(identity_keys).as_object();
+    auto curve25519_key = String(as_std_string(parsed_keys.at("curve25519").as_string()));
+    auto ed25519_key = String(as_std_string(parsed_keys.at("ed25519").as_string()));
+
+    EXPECT_EQ(curve25519_key,
+      unpickled->curve25519_key()->to_base64());
+    EXPECT_EQ(ed25519_key,
+      unpickled->ed25519_key()->to_base64());
+  }
+
+  {
+    auto one_time_keys = std::string(olm_account_one_time_keys_length(alice), '\0');
+    check_olm_error(olm_account_one_time_keys(alice, one_time_keys.data(), one_time_keys.size()));
+    auto parsed_keys = boost::json::parse(one_time_keys).as_object().at("curve25519").as_object();
+    // The key id will change from libolm to vodozemac, but the key themselves won't.
+    auto one_time_keys_set = std::unordered_set<std::string>();
+    for (const auto &pair : parsed_keys) {
+      one_time_keys_set.insert(as_std_string(pair.value().as_string()));
+    }
+
+    auto unpickled_one_time_keys = unpickled->one_time_keys();
+    auto unpickled_one_time_keys_set = std::unordered_set<std::string>();
+    for (const auto &k : unpickled_one_time_keys) {
+      unpickled_one_time_keys_set.insert(static_cast<std::string>(k.key->to_base64()));
+    }
+
+    EXPECT_EQ(one_time_keys_set, unpickled_one_time_keys_set);
+  }
 }
