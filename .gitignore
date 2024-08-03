@@ -9,4 +9,5 @@ cpp/account-test
 cpp/session-test
 cpp/sas-test
 cpp/group-session-test
+cpp/objects
 .ccls-cache
