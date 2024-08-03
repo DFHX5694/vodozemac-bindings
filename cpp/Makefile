@@ -72,7 +72,7 @@ test: account-test session-test sas-test group-session-test
 install: all
 	$(INSTALL) -d $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(LIBDIR)
 	$(INSTALL) -m644 $(STATIC_LIB) $(DESTDIR)$(LIBDIR)
-	$(INSTALL) -m755 $(SHARED_LIB_PREFIX).$(SOVERSION) $(DESTDIR)$(LIBDIR)
-	$(LN) -sfv libvodozemac.so.$(SOVERSION) $(DESTDIR)$(LIBDIR)/libvodozemac.so.$(VERSION)
-	$(LN) -sfv libvodozemac.so.$(VERSION) $(DESTDIR)$(LIBDIR)/libvodozemac.so
+	$(INSTALL) -m755 $(SHARED_LIB_PREFIX).$(VERSION) $(DESTDIR)$(LIBDIR)
+	$(LN) -sfv libvodozemac.so.$(VERSION) $(DESTDIR)$(LIBDIR)/libvodozemac.so.$(SOVERSION)
+	$(LN) -sfv libvodozemac.so.$(SOVERSION) $(DESTDIR)$(LIBDIR)/libvodozemac.so
 	$(CP) $(HEADER) $(DESTDIR)$(INCLUDEDIR)/vodozemac.h
