@@ -5,6 +5,7 @@
 #include "util.hpp"
 
 using namespace rust;
+using namespace vodozemac;
 
 struct SessionCreationResult {
   Box<megolm::GroupSession> outbound;

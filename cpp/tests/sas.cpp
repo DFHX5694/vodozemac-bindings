@@ -2,6 +2,7 @@
 #include "gtest/gtest.h"
 
 using namespace rust;
+using namespace vodozemac;
 
 TEST(SasTest, Creation) {
   auto alice = sas::new_sas();

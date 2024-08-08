@@ -20,25 +20,25 @@ use types::{
 
 #[cxx::bridge]
 mod ffi {
-    #[namespace = "olm"]
+    #[namespace = "vodozemac::olm"]
     struct OlmMessageParts {
         message_type: usize,
         ciphertext: String,
     }
 
-    #[namespace = "olm"]
+    #[namespace = "vodozemac::olm"]
     pub struct InboundCreationResult {
         pub session: Box<Session>,
         pub plaintext: Vec<u8>,
     }
 
-    #[namespace = "olm"]
+    #[namespace = "vodozemac::olm"]
     struct OneTimeKey {
         key_id: String,
         key: Box<Curve25519PublicKey>,
     }
 
-    #[namespace = "olm"]
+    #[namespace = "vodozemac::olm"]
     #[derive(PartialEq, Eq)]
     struct SessionKeys {
         identity_key: Box<Curve25519PublicKey>,
@@ -46,7 +46,7 @@ mod ffi {
         one_time_key: Box<Curve25519PublicKey>,
     }
 
-    #[namespace = "types"]
+    #[namespace = "vodozemac::types"]
     extern "Rust" {
         type Curve25519PublicKey;
         fn curve_key_from_base64(key: &str) -> Result<Box<Curve25519PublicKey>>;
@@ -60,7 +60,7 @@ mod ffi {
         fn to_base64(self: &Ed25519Signature) -> String;
     }
 
-    #[namespace = "olm"]
+    #[namespace = "vodozemac::olm"]
     extern "Rust" {
         type Account;
         fn new_account() -> Box<Account>;
@@ -102,13 +102,13 @@ mod ffi {
         fn olm_message_from_parts(parts: &OlmMessageParts) -> Result<Box<OlmMessage>>;
     }
 
-    #[namespace = "megolm"]
+    #[namespace = "vodozemac::megolm"]
     struct DecryptedMessage {
         plaintext: Vec<u8>,
         message_index: u32,
     }
 
-    #[namespace = "megolm"]
+    #[namespace = "vodozemac::megolm"]
     extern "Rust" {
         type MegolmMessage;
         fn megolm_message_from_base64(message: &str) -> Result<Box<MegolmMessage>>;
@@ -164,7 +164,7 @@ mod ffi {
         ) -> Result<Box<InboundGroupSession>>;
     }
 
-    #[namespace = "sas"]
+    #[namespace = "vodozemac::sas"]
     extern "Rust" {
         type Mac;
         fn mac_from_base64(mac: &str) -> Result<Box<Mac>>;

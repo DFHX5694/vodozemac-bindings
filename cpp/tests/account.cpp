@@ -7,6 +7,7 @@
 #include "util.hpp"
 
 using namespace rust;
+using namespace vodozemac;
 
 TEST(AccountTest, AccountCreation) {
   auto alice = olm::new_account();
