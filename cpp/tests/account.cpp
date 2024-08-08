@@ -100,3 +100,24 @@ TEST(AccountTest, PickleFromLibolmTest) {
     EXPECT_EQ(one_time_keys_set, unpickled_one_time_keys_set);
   }
 }
+
+TEST(AccountTest, SignAndVerify) {
+  auto alice = olm::new_account();
+  auto key = alice->ed25519_key();
+  std::string str = "{}";
+  auto signature = alice->sign(Str(str));
+  EXPECT_NO_THROW(key->verify(Str(str), *signature));
+  {
+    auto cloned_signature = types::ed25519_signature_from_base64(signature->to_base64());
+    EXPECT_NO_THROW(key->verify(Str(str), *cloned_signature));
+  }
+  {
+    auto cloned_key = types::ed25519_key_from_base64(key->to_base64());
+    EXPECT_NO_THROW(cloned_key->verify(Str(str), *signature));
+  }
+
+  std::string str2 = "{\"foo\": \"bar\"}";
+  auto signature2 = alice->sign(Str(str2));
+  EXPECT_ANY_THROW(key->verify(Str(str2), *signature));
+  EXPECT_ANY_THROW(key->verify(Str(str), *signature2));
+}

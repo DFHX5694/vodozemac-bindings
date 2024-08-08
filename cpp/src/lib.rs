@@ -14,7 +14,7 @@ use group_sessions::{
 use sas::{mac_from_base64, new_sas, EstablishedSas, Mac, Sas, SasBytes};
 use session::{session_from_pickle, session_from_libolm_pickle, Session};
 use types::{
-    curve_key_from_base64, ed25519_key_from_base64, Curve25519PublicKey, Ed25519PublicKey,
+    curve_key_from_base64, ed25519_key_from_base64, ed25519_signature_from_base64, Curve25519PublicKey, Ed25519PublicKey,
     Ed25519Signature,
 };
 
@@ -54,7 +54,10 @@ mod ffi {
         type Ed25519PublicKey;
         fn ed25519_key_from_base64(key: &str) -> Result<Box<Ed25519PublicKey>>;
         fn to_base64(self: &Ed25519PublicKey) -> String;
+        fn verify(self: &Ed25519PublicKey, message: &str, signature: &Ed25519Signature) -> Result<()>;
         type Ed25519Signature;
+        fn ed25519_signature_from_base64(key: &str) -> Result<Box<Ed25519Signature>>;
+        fn to_base64(self: &Ed25519Signature) -> String;
     }
 
     #[namespace = "olm"]
