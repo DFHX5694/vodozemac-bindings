@@ -36,7 +36,7 @@ INCLUDEDIR = $(PREFIX)/include
 $(STATIC_LIB): $(SOURCES)
 	cargo build $(CARGO_ARGS)
 
-dynamic-lib: $(SHARED_LIB_PREFIX).$(VERSION)
+dynamic-lib: $(SHARED_LIB_PREFIX)
 
 $(SHARED_LIB_PREFIX).$(SOVERSION): $(SHARED_LIB_PREFIX).$(VERSION)
 	$(LN) -sfv libvodozemac.so.$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION)
