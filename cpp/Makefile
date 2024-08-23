@@ -1,6 +1,6 @@
-all: rust-lib dynamic-lib
+all: dynamic-lib
 
-.PHONY: all rust-lib dynamic-lib test install
+.PHONY: all dynamic-lib test install
 
 BUILD_TYPE := debug
 ifeq ($(BUILD_TYPE), release)
@@ -19,6 +19,7 @@ SHARED_LIB_NAME = libvodozemac.so
 SHARED_LIB_PREFIX = $(TARGET_DIR)/$(SHARED_LIB_NAME)
 SHARED_LIBS = $(SHARED_LIB_PREFIX) $(SHARED_LIB_PREFIX).$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION)
 HEADER = $(CXXBRIDGE_DIR)/vodozemac/src/lib.rs.h
+SOURCES = src/account.rs src/group_sessions.rs src/lib.rs src/sas.rs src/session.rs src/types.rs build.rs
 
 AR ?= ar
 CXX ?= c++
@@ -32,37 +33,45 @@ DESTDIR =
 LIBDIR = $(PREFIX)/lib
 INCLUDEDIR = $(PREFIX)/include
 
-rust-lib:
+$(STATIC_LIB): $(SOURCES)
 	cargo build $(CARGO_ARGS)
 
-dynamic-lib:
+dynamic-lib: $(SHARED_LIB_PREFIX).$(VERSION)
+
+$(SHARED_LIB_PREFIX).$(SOVERSION): $(SHARED_LIB_PREFIX).$(VERSION)
+	$(LN) -sfv libvodozemac.so.$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION)
+
+$(SHARED_LIB_PREFIX): $(SHARED_LIB_PREFIX).$(SOVERSION)
+	$(LN) -sfv libvodozemac.so.$(SOVERSION) $(SHARED_LIB_PREFIX)
+
+$(SHARED_LIB_PREFIX).$(VERSION): $(STATIC_LIB)
 	rm -rf objects && \
 	mkdir objects && \
 	cd objects && \
 	$(AR) x ../$(STATIC_LIB) && \
 	cd .. && \
-	$(CXX) objects/*.o -shared -Wl,-soname=$(SHARED_LIB_NAME) -o $(SHARED_LIB_PREFIX).$(VERSION) && \
-	$(LN) -sfv libvodozemac.so.$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION) && \
-	$(LN) -sfv libvodozemac.so.$(SOVERSION) $(SHARED_LIB_PREFIX)
+	$(CXX) objects/*.o -shared -Wl,-soname=$(SHARED_LIB_NAME) -o $(SHARED_LIB_PREFIX).$(VERSION)
 
 TEST_CXXFLAGS = -Wall -g -pthread -std=c++17 -lgtest_main \
  -lgtest -lolm -lboost_json -lpthread -I $(CXXBRIDGE_DIR) \
  -L $(TARGET_DIR) -l vodozemac -ldl -Wl,-rpath,$(TARGET_DIR)
 
-account-test: dynamic-lib tests/account.cpp
+TEST_DEPS = $(SHARED_LIB_PREFIX).$(VERSION) tests/util.hpp
+
+account-test: $(TEST_DEPS) tests/account.cpp
 	$(CXX) $(TEST_CXXFLAGS) \
 	tests/account.cpp -o account-test
 
 
-session-test: dynamic-lib tests/session.cpp
+session-test: $(TEST_DEPS) tests/session.cpp
 	$(CXX) $(TEST_CXXFLAGS) \
 	tests/session.cpp -o session-test
 
-sas-test: dynamic-lib tests/sas.cpp
+sas-test: $(TEST_DEPS) tests/sas.cpp
 	$(CXX) $(TEST_CXXFLAGS) \
 	tests/sas.cpp -o sas-test
 
-group-session-test: dynamic-lib tests/group_session.cpp
+group-session-test: $(TEST_DEPS) tests/group_session.cpp
 	$(CXX) $(TEST_CXXFLAGS) \
 	tests/group_session.cpp -o group-session-test
 
