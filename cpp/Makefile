@@ -12,16 +12,19 @@ endif
 VERSION = 0.1.0
 SOVERSION = 1
 
-STATIC_LIB = ../target/$(BUILD_TYPE)/libvodozemac.a
-SHARED_LIB_PREFIX = ../target/$(BUILD_TYPE)/libvodozemac.so
+TARGET_DIR = ../target/$(BUILD_TYPE)
+CXXBRIDGE_DIR = $(TARGET_DIR)/../cxxbridge
+STATIC_LIB = $(TARGET_DIR)/libvodozemac.a
+SHARED_LIB_NAME = libvodozemac.so
+SHARED_LIB_PREFIX = $(TARGET_DIR)/$(SHARED_LIB_NAME)
 SHARED_LIBS = $(SHARED_LIB_PREFIX) $(SHARED_LIB_PREFIX).$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION)
-HEADER = ../target/cxxbridge/vodozemac/src/lib.rs.h
+HEADER = $(CXXBRIDGE_DIR)/vodozemac/src/lib.rs.h
 
-AR = ar
-CXX = c++
-LN = ln
-INSTALL = install
-CP = cp
+AR ?= ar
+CXX ?= c++
+LN ?= ln
+INSTALL ?= install
+CP ?= cp
 
 # Packagers may need to override them all.
 PREFIX = /usr/local
@@ -32,19 +35,19 @@ INCLUDEDIR = $(PREFIX)/include
 rust-lib:
 	cargo build $(CARGO_ARGS)
 
-dynamic-lib: rust-lib
+dynamic-lib:
 	rm -rf objects && \
 	mkdir objects && \
 	cd objects && \
 	$(AR) x ../$(STATIC_LIB) && \
 	cd .. && \
-	$(CXX) objects/*.o -shared -o $(SHARED_LIB_PREFIX).$(VERSION) && \
+	$(CXX) objects/*.o -shared -Wl,-soname=$(SHARED_LIB_NAME) -o $(SHARED_LIB_PREFIX).$(VERSION) && \
 	$(LN) -sfv libvodozemac.so.$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION) && \
 	$(LN) -sfv libvodozemac.so.$(SOVERSION) $(SHARED_LIB_PREFIX)
 
 TEST_CXXFLAGS = -Wall -g -pthread -std=c++17 -lgtest_main \
- -lgtest -lolm -lboost_json -lpthread -I ../target/cxxbridge \
- -L ../target/$(BUILD_TYPE)/ -l vodozemac -ldl -Wl,-rpath,../target/$(BUILD_TYPE)
+ -lgtest -lolm -lboost_json -lpthread -I $(CXXBRIDGE_DIR) \
+ -L $(TARGET_DIR) -l vodozemac -ldl -Wl,-rpath,$(TARGET_DIR)
 
 account-test: dynamic-lib tests/account.cpp
 	$(CXX) $(TEST_CXXFLAGS) \
@@ -69,10 +72,10 @@ test: account-test session-test sas-test group-session-test
 	./sas-test --gtest_color=yes
 	./group-session-test --gtest_color=yes
 
-install: all
+install:
 	$(INSTALL) -d $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(LIBDIR)
 	$(INSTALL) -m644 $(STATIC_LIB) $(DESTDIR)$(LIBDIR)
 	$(INSTALL) -m755 $(SHARED_LIB_PREFIX).$(VERSION) $(DESTDIR)$(LIBDIR)
-	$(LN) -sfv libvodozemac.so.$(VERSION) $(DESTDIR)$(LIBDIR)/libvodozemac.so.$(SOVERSION)
-	$(LN) -sfv libvodozemac.so.$(SOVERSION) $(DESTDIR)$(LIBDIR)/libvodozemac.so
+	$(LN) -sfv $(SHARED_LIB_NAME).$(VERSION) $(DESTDIR)$(LIBDIR)/$(SHARED_LIB_NAME).$(SOVERSION)
+	$(LN) -sfv $(SHARED_LIB_NAME).$(SOVERSION) $(DESTDIR)$(LIBDIR)/$(SHARED_LIB_NAME)
 	$(CP) $(HEADER) $(DESTDIR)$(INCLUDEDIR)/vodozemac.h
