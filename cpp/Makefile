@@ -50,7 +50,7 @@ $(SHARED_LIB_PREFIX).$(VERSION): $(STATIC_LIB)
 	cd objects && \
 	$(AR) x ../$(STATIC_LIB) && \
 	cd .. && \
-	$(CXX) objects/*.o -shared -Wl,-soname=$(SHARED_LIB_NAME) -o $(SHARED_LIB_PREFIX).$(VERSION)
+	$(CXX) objects/*.o -shared -fPIC -Wl,-soname=$(SHARED_LIB_NAME) -o $(SHARED_LIB_PREFIX).$(VERSION)
 
 TEST_CXXFLAGS = -Wall -g -pthread -std=c++17 -lgtest_main \
  -lgtest -lolm -lboost_json -lpthread -I $(CXXBRIDGE_DIR) \
