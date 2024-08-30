@@ -22,22 +22,72 @@ TEST(AccountTest, OneTimeKeyGeneration) {
 
   EXPECT_EQ(alice->one_time_keys().size(), 0);
 
-  alice->generate_one_time_keys(10);
+  auto result = alice->generate_one_time_keys(10);
+  EXPECT_EQ(result->created().size(), 10);
   EXPECT_EQ(alice->one_time_keys().size(), 10);
 
   alice->mark_keys_as_published();
   EXPECT_EQ(alice->one_time_keys().size(), 0);
 }
 
+TEST(AccountTest, OneTimeKeysRemovedWhenTooMany) {
+  auto alice = olm::new_account();
+
+  // Vodozemac will remove old one-time keys when the total number of generated one-time keys exceeds an internal constant.
+  // That internal constant is not a part of the public API, that's why we keep generating new keys until the first removal.
+  static constexpr std::size_t upper_bound = 1000000;
+  // The long variable names are needed for better error messages in case the test fails.
+  std::size_t total_number_of_generated_one_time_keys = 0;
+  std::size_t total_number_of_one_time_keys_removed = 0;
+  while (total_number_of_one_time_keys_removed == 0 && total_number_of_generated_one_time_keys < upper_bound) {
+    auto result = alice->generate_one_time_keys(alice->max_number_of_one_time_keys());
+    total_number_of_generated_one_time_keys += result->created().size();
+    total_number_of_one_time_keys_removed += result->removed().size();
+  }
+
+  EXPECT_GT(total_number_of_one_time_keys_removed, 0) << " Generated " << upper_bound << " one-time keys, but no keys were removed.";
+  EXPECT_EQ(alice->one_time_keys().size() + total_number_of_one_time_keys_removed, total_number_of_generated_one_time_keys);
+}
+
 TEST(AccountTest, FallbackKeyGeneration) {
   auto alice = olm::new_account();
   EXPECT_EQ(alice->fallback_key().size(), 0);
 
-  alice->generate_fallback_key();
+  auto previous_fallback_key = alice->generate_fallback_key();
   EXPECT_EQ(alice->fallback_key().size(), 1);
+  EXPECT_EQ(previous_fallback_key.size(), 0);
 
   alice->mark_keys_as_published();
-  EXPECT_EQ(alice->one_time_keys().size(), 0);
+  EXPECT_EQ(alice->fallback_key().size(), 0);
+}
+
+TEST(AccountTest, FallbackKeyDeprecation) {
+  auto alice = olm::new_account();
+  EXPECT_EQ(alice->fallback_key().size(), 0);
+
+  auto previous_fallback_key = alice->generate_fallback_key();
+  EXPECT_EQ(alice->fallback_key().size(), 1);
+  EXPECT_EQ(previous_fallback_key.size(), 0) <<
+    "When a fallback key is generated for the first time, there should not be any old fallback keys to remove.";
+
+  alice->mark_keys_as_published();
+  EXPECT_EQ(alice->fallback_key().size(), 0);
+
+  // olm::Account stores up to two fallback keys.
+  // The old fallback key should not be removed, yet.
+  previous_fallback_key = alice->generate_fallback_key();
+  EXPECT_EQ(alice->fallback_key().size(), 1);
+  EXPECT_EQ(previous_fallback_key.size(), 0) <<
+    "After a fallback key has been generated twice, the old fallback key should not be removed yet.";
+
+  alice->mark_keys_as_published();
+  EXPECT_EQ(alice->fallback_key().size(), 0);
+
+  // Now we expect the old fallback key to be removed.
+  previous_fallback_key = alice->generate_fallback_key();
+  EXPECT_EQ(alice->fallback_key().size(), 1);
+  EXPECT_EQ(previous_fallback_key.size(), 1) <<
+    "After a fallback key has been generated three times, the old fallback key should be removed.";
 }
 
 TEST(AccountTest, MaxKeysTest) {

@@ -4,7 +4,7 @@ mod sas;
 mod session;
 mod types;
 
-use account::{account_from_pickle, account_from_libolm_pickle, new_account, olm_message_from_parts, Account, OlmMessage};
+use account::{account_from_pickle, account_from_libolm_pickle, new_account, olm_message_from_parts, Account, OlmMessage, OneTimeKeyGenerationResult};
 use group_sessions::{
     exported_session_key_from_base64, group_session_from_pickle, group_session_from_libolm_pickle, import_inbound_group_session,
     inbound_group_session_from_pickle, inbound_group_session_from_libolm_pickle, megolm_message_from_base64, new_group_session,
@@ -67,9 +67,9 @@ mod ffi {
         fn ed25519_key(self: &Account) -> Box<Ed25519PublicKey>;
         fn curve25519_key(self: &Account) -> Box<Curve25519PublicKey>;
         fn sign(self: &Account, message: &str) -> Box<Ed25519Signature>;
-        fn generate_one_time_keys(self: &mut Account, count: usize);
+        fn generate_one_time_keys(self: &mut Account, count: usize) -> Box<OneTimeKeyGenerationResult>;
         fn one_time_keys(self: &Account) -> Vec<OneTimeKey>;
-        fn generate_fallback_key(self: &mut Account);
+        fn generate_fallback_key(self: &mut Account) -> Vec<Curve25519PublicKey>;
         fn fallback_key(self: &Account) -> Vec<OneTimeKey>;
         fn mark_keys_as_published(self: &mut Account);
         fn max_number_of_one_time_keys(self: &Account) -> usize;
@@ -86,6 +86,10 @@ mod ffi {
             identity_key: &Curve25519PublicKey,
             message: &OlmMessage,
         ) -> Result<InboundCreationResult>;
+
+        type OneTimeKeyGenerationResult;
+        fn created(self: &OneTimeKeyGenerationResult) -> Vec<Curve25519PublicKey>;
+        fn removed(self: &OneTimeKeyGenerationResult) -> Vec<Curve25519PublicKey>;
 
         type Session;
         fn session_id(self: &Session) -> String;
