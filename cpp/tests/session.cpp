@@ -1,5 +1,5 @@
 #include "../../target/cxxbridge/vodozemac/src/lib.rs.h"
-#include "gtest/gtest.h"
+#include <catch2/catch_test_macros.hpp>
 #include <boost/json.hpp>
 #include "util.hpp"
 
@@ -34,25 +34,25 @@ SessionCreationResult create_session() {
   return ret;
 }
 
-TEST(SessionTest, Creation) {
+TEST_CASE("Creation", "[SessionTest]") {
   auto [alice, bob, session] = create_session();
 
   auto session_id = session->session_id();
 
-  EXPECT_NE(session_id.length(), 0);
+  REQUIRE(session_id.length() != 0);
 }
 
-TEST(SessionTest, IdUniqueness) {
+TEST_CASE("IdUniqueness", "[SessionTest]") {
   auto [alice1, bob1, session] = create_session();
   auto [alice2, bob2, session2] = create_session();
 
   auto session_id = session->session_id();
   auto session2_id = session2->session_id();
 
-  EXPECT_STRNE(session_id.c_str(), session2_id.c_str());
+  REQUIRE(session_id != session2_id);
 }
 
-TEST(SessionTest, Pickle) {
+TEST_CASE("Pickle", "[SessionTest]") {
   auto [alice, bob, session] = create_session();
 
   auto pickle = session->pickle(PICKLE_KEY);
@@ -61,10 +61,10 @@ TEST(SessionTest, Pickle) {
   auto session_id = session->session_id();
   auto session2_id = unpickled->session_id();
 
-  EXPECT_STREQ(session_id.c_str(), session2_id.c_str());
+  REQUIRE(session_id == session2_id);
 }
 
-TEST(SessionTest, PickleFromLibolm) {
+TEST_CASE("PickleFromLibolm", "[SessionTest]") {
   auto [_1, alice] = new_olm_account();
   auto [_2, bob] = new_olm_account();
 
@@ -96,14 +96,14 @@ TEST(SessionTest, PickleFromLibolm) {
   check_olm_error(olm_session_id(session, session_id.data(), session_id.size()));
   auto session2_id = unpickled->session_id();
 
-  EXPECT_STREQ(session_id.c_str(), session2_id.c_str());
+  REQUIRE(session_id == as_std_string(session2_id));
 }
 
-TEST(SessionTest, InvalidPickle) {
-  EXPECT_ANY_THROW(olm::session_from_pickle("", PICKLE_KEY));
+TEST_CASE("InvalidPickle", "[SessionTest]") {
+  REQUIRE_THROWS(olm::session_from_pickle("", PICKLE_KEY));
 }
 
-TEST(SessionTest, Encryption) {
+TEST_CASE("Encryption", "[SessionTest]") {
   auto [alice, bob, session] = create_session();
 
   auto alice_key = alice->curve25519_key();
@@ -114,22 +114,22 @@ TEST(SessionTest, Encryption) {
   auto [bob_session, decrypted] =
       bob->create_inbound_session(*alice_key, *message);
 
-  EXPECT_STREQ(session->session_id().c_str(),
-               bob_session->session_id().c_str());
+  REQUIRE(session->session_id() ==
+    bob_session->session_id());
 
-  EXPECT_EQ(std::string(plaintext), as_std_string(decrypted));
+  REQUIRE(std::string(plaintext) == as_std_string(decrypted));
 }
 
-TEST(SessionTest, InvalidDecryption) {
+TEST_CASE("InvalidDecryption", "[SessionTest]") {
   auto parts = olm::OlmMessageParts{
       0,
       "",
   };
 
-  EXPECT_ANY_THROW(olm::olm_message_from_parts(parts));
+  REQUIRE_THROWS(olm::olm_message_from_parts(parts));
 }
 
-TEST(SessionTest, MultipleMessageDecryption) {
+TEST_CASE("MultipleMessageDecryption", "[SessionTest]") {
   auto [alice, bob, session] = create_session();
 
   auto alice_key = alice->curve25519_key();
@@ -140,20 +140,20 @@ TEST(SessionTest, MultipleMessageDecryption) {
   auto [bob_session, decrypted] =
       bob->create_inbound_session(*alice_key, *message);
 
-  EXPECT_STREQ(session->session_id().c_str(),
-               bob_session->session_id().c_str());
+  REQUIRE(session->session_id() ==
+    bob_session->session_id());
 
-  EXPECT_EQ(std::string(plaintext), as_std_string(decrypted));
+  REQUIRE(std::string(plaintext) == as_std_string(decrypted));
 
   plaintext = "Grumble grumble";
 
   message = bob_session->encrypt(plaintext);
   decrypted = session->decrypt(*message);
 
-  EXPECT_EQ(std::string(plaintext), as_std_string(decrypted));
+  REQUIRE(std::string(plaintext) == as_std_string(decrypted));
 }
 
-TEST(SessionTest, PreKeyMatches) {
+TEST_CASE("PreKeyMatches", "[SessionTest]") {
   auto [alice, bob, session] = create_session();
 
   auto alice_key = alice->curve25519_key();
@@ -167,10 +167,10 @@ TEST(SessionTest, PreKeyMatches) {
   plaintext = "Grumble grumble";
   message = session->encrypt(plaintext);
 
-  EXPECT_TRUE(bob_session->session_matches(*message));
+  REQUIRE(bob_session->session_matches(*message));
 }
 
-TEST(SessionTest, PreKeyDoesNotMatch) {
+TEST_CASE("PreKeyDoesNotMatch", "[SessionTest]") {
   auto [alice, bob, session] = create_session();
   auto [alice2, bob2, session2] = create_session();
 
@@ -185,9 +185,9 @@ TEST(SessionTest, PreKeyDoesNotMatch) {
   plaintext = "Grumble grumble";
   message = session2->encrypt(plaintext);
 
-  EXPECT_FALSE(bob_session->session_matches(*message));
+  REQUIRE_FALSE(bob_session->session_matches(*message));
 }
 
-TEST(SessionTest, InvalidOneTimeKey) {
-  EXPECT_ANY_THROW(types::curve_key_from_base64(""));
+TEST_CASE("InvalidOneTimeKey", "[SessionTest]") {
+  REQUIRE_THROWS(types::curve_key_from_base64(""));
 }

@@ -3,34 +3,34 @@
 #include <unordered_set>
 #include <olm/olm.h>
 #include <boost/json.hpp>
-#include "gtest/gtest.h"
+#include <catch2/catch_test_macros.hpp>
 #include "util.hpp"
 
 using namespace rust;
 using namespace vodozemac;
 
-TEST(AccountTest, AccountCreation) {
+TEST_CASE("AccountCreation", "[AccountTest]") {
   auto alice = olm::new_account();
   auto key = alice->ed25519_key();
   auto encoded_key = key->to_base64();
 
-  EXPECT_NE(encoded_key.length(), 0);
+  REQUIRE(encoded_key.length() != 0);
 }
 
-TEST(AccountTest, OneTimeKeyGeneration) {
+TEST_CASE("OneTimeKeyGeneration", "[AccountTest]") {
   auto alice = olm::new_account();
 
-  EXPECT_EQ(alice->one_time_keys().size(), 0);
+  REQUIRE(alice->one_time_keys().size() == 0);
 
   auto result = alice->generate_one_time_keys(10);
-  EXPECT_EQ(result->created().size(), 10);
-  EXPECT_EQ(alice->one_time_keys().size(), 10);
+  REQUIRE(result->created().size() == 10);
+  REQUIRE(alice->one_time_keys().size() == 10);
 
   alice->mark_keys_as_published();
-  EXPECT_EQ(alice->one_time_keys().size(), 0);
+  REQUIRE(alice->one_time_keys().size() == 0);
 }
 
-TEST(AccountTest, OneTimeKeysRemovedWhenTooMany) {
+TEST_CASE("OneTimeKeysRemovedWhenTooMany", "[AccountTest]") {
   auto alice = olm::new_account();
 
   // Vodozemac will remove old one-time keys when the total number of generated one-time keys exceeds an internal constant.
@@ -45,71 +45,76 @@ TEST(AccountTest, OneTimeKeysRemovedWhenTooMany) {
     total_number_of_one_time_keys_removed += result->removed().size();
   }
 
-  EXPECT_GT(total_number_of_one_time_keys_removed, 0) << " Generated " << upper_bound << " one-time keys, but no keys were removed.";
-  EXPECT_EQ(alice->one_time_keys().size() + total_number_of_one_time_keys_removed, total_number_of_generated_one_time_keys);
+  SECTION("After generating really many one-time keys the oldest ones should be removed") {
+    REQUIRE(total_number_of_one_time_keys_removed > 0);
+    REQUIRE(alice->one_time_keys().size() + total_number_of_one_time_keys_removed == total_number_of_generated_one_time_keys);
+  }
 }
 
-TEST(AccountTest, FallbackKeyGeneration) {
+TEST_CASE("FallbackKeyGeneration", "[AccountTest]") {
   auto alice = olm::new_account();
-  EXPECT_EQ(alice->fallback_key().size(), 0);
+  REQUIRE(alice->fallback_key().size() == 0);
 
   auto previous_fallback_key = alice->generate_fallback_key();
-  EXPECT_EQ(alice->fallback_key().size(), 1);
-  EXPECT_EQ(previous_fallback_key.size(), 0);
+  REQUIRE(alice->fallback_key().size() == 1);
+  REQUIRE(previous_fallback_key.size() == 0);
 
   alice->mark_keys_as_published();
-  EXPECT_EQ(alice->fallback_key().size(), 0);
+  REQUIRE(alice->fallback_key().size() == 0);
 }
 
-TEST(AccountTest, FallbackKeyDeprecation) {
+TEST_CASE("FallbackKeyDeprecation", "[AccountTest]") {
   auto alice = olm::new_account();
-  EXPECT_EQ(alice->fallback_key().size(), 0);
+  REQUIRE(alice->fallback_key().size() == 0);
 
   auto previous_fallback_key = alice->generate_fallback_key();
-  EXPECT_EQ(alice->fallback_key().size(), 1);
-  EXPECT_EQ(previous_fallback_key.size(), 0) <<
-    "When a fallback key is generated for the first time, there should not be any old fallback keys to remove.";
+  REQUIRE(alice->fallback_key().size() == 1);
+  SECTION("When a fallback key is generated for the first time, there should not be any old fallback keys to remove.") {
+    REQUIRE(previous_fallback_key.size() == 0);
+  }
 
   alice->mark_keys_as_published();
-  EXPECT_EQ(alice->fallback_key().size(), 0);
+  REQUIRE(alice->fallback_key().size() == 0);
 
   // olm::Account stores up to two fallback keys.
   // The old fallback key should not be removed, yet.
   previous_fallback_key = alice->generate_fallback_key();
-  EXPECT_EQ(alice->fallback_key().size(), 1);
-  EXPECT_EQ(previous_fallback_key.size(), 0) <<
-    "After a fallback key has been generated twice, the old fallback key should not be removed yet.";
+  REQUIRE(alice->fallback_key().size() == 1);
+  SECTION("After a fallback key has been generated twice, the old fallback key should not be removed yet.") {
+    REQUIRE(previous_fallback_key.size() == 0);
+  }
 
   alice->mark_keys_as_published();
-  EXPECT_EQ(alice->fallback_key().size(), 0);
+  REQUIRE(alice->fallback_key().size() == 0);
 
   // Now we expect the old fallback key to be removed.
   previous_fallback_key = alice->generate_fallback_key();
-  EXPECT_EQ(alice->fallback_key().size(), 1);
-  EXPECT_EQ(previous_fallback_key.size(), 1) <<
-    "After a fallback key has been generated three times, the old fallback key should be removed.";
+  REQUIRE(alice->fallback_key().size() == 1);
+  SECTION("After a fallback key has been generated three times, the old fallback key should be removed.") {
+    REQUIRE(previous_fallback_key.size() == 1);
+  }
 }
 
-TEST(AccountTest, MaxKeysTest) {
+TEST_CASE("MaxKeysTest", "[AccountTest]") {
   auto alice = olm::new_account();
   auto max_keys = alice->max_number_of_one_time_keys();
 
-  EXPECT_GT(max_keys, 0);
-  EXPECT_LT(max_keys, 1000);
+  REQUIRE(max_keys > 0);
+  REQUIRE(max_keys < 1000);
 }
 
-TEST(AccountTest, PickleTest) {
+TEST_CASE("PickleTest", "[AccountTest]") {
   auto alice = olm::new_account();
 
   auto pickle = alice->pickle(PICKLE_KEY);
 
   auto unpickled = olm::account_from_pickle(pickle, PICKLE_KEY);
 
-  EXPECT_EQ(alice->curve25519_key()->to_base64(),
-            unpickled->curve25519_key()->to_base64());
+  REQUIRE(alice->curve25519_key()->to_base64() ==
+    unpickled->curve25519_key()->to_base64());
 }
 
-TEST(AccountTest, PickleFromLibolmTest) {
+TEST_CASE("PickleFromLibolmTest", "[AccountTest]") {
   auto [data, alice] = new_olm_account();
   auto random = gen_random(olm_account_generate_one_time_keys_random_length(alice, 10));
   check_olm_error(olm_account_generate_one_time_keys(alice, 10, random.data(), random.size()));
@@ -126,9 +131,9 @@ TEST(AccountTest, PickleFromLibolmTest) {
     auto curve25519_key = String(as_std_string(parsed_keys.at("curve25519").as_string()));
     auto ed25519_key = String(as_std_string(parsed_keys.at("ed25519").as_string()));
 
-    EXPECT_EQ(curve25519_key,
+    REQUIRE(curve25519_key ==
       unpickled->curve25519_key()->to_base64());
-    EXPECT_EQ(ed25519_key,
+    REQUIRE(ed25519_key ==
       unpickled->ed25519_key()->to_base64());
   }
 
@@ -148,27 +153,27 @@ TEST(AccountTest, PickleFromLibolmTest) {
       unpickled_one_time_keys_set.insert(static_cast<std::string>(k.key->to_base64()));
     }
 
-    EXPECT_EQ(one_time_keys_set, unpickled_one_time_keys_set);
+    REQUIRE(one_time_keys_set == unpickled_one_time_keys_set);
   }
 }
 
-TEST(AccountTest, SignAndVerify) {
+TEST_CASE("SignAndVerify", "[AccountTest]") {
   auto alice = olm::new_account();
   auto key = alice->ed25519_key();
   std::string str = "{}";
   auto signature = alice->sign(Str(str));
-  EXPECT_NO_THROW(key->verify(Str(str), *signature));
+  REQUIRE_NOTHROW(key->verify(Str(str), *signature));
   {
     auto cloned_signature = types::ed25519_signature_from_base64(signature->to_base64());
-    EXPECT_NO_THROW(key->verify(Str(str), *cloned_signature));
+    REQUIRE_NOTHROW(key->verify(Str(str), *cloned_signature));
   }
   {
     auto cloned_key = types::ed25519_key_from_base64(key->to_base64());
-    EXPECT_NO_THROW(cloned_key->verify(Str(str), *signature));
+    REQUIRE_NOTHROW(cloned_key->verify(Str(str), *signature));
   }
 
   std::string str2 = "{\"foo\": \"bar\"}";
   auto signature2 = alice->sign(Str(str2));
-  EXPECT_ANY_THROW(key->verify(Str(str2), *signature));
-  EXPECT_ANY_THROW(key->verify(Str(str), *signature2));
+  REQUIRE_THROWS(key->verify(Str(str2), *signature));
+  REQUIRE_THROWS(key->verify(Str(str), *signature2));
 }

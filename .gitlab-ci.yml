@@ -1,0 +1,82 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: '$CI_COMMIT_TAG !~ /^phabricator\//'
+
+stages:
+  - prepare
+  - build
+  - report
+
+.report:
+  image:
+    name: 'reg.lily.kazv.moe/infra/phorge-ci-tools:servant'
+  rules:
+    - if: $TARGET_PHID
+      when: always
+    - when: never
+  before_script:
+    - pipelineUrl="$CI_PROJECT_URL"/-/pipelines/"$CI_PIPELINE_ID"
+
+report-start:
+  extends: .report
+  stage: prepare
+  script:
+    - 'echo "{\"receiver\": \"$TARGET_PHID\", \"type\": \"work\", \"unit\": [{\"name\": \"GitLab CI (information only)\", \"result\": \"skip\", \"details\": \"$pipelineUrl\", \"format\": \"remarkup\"}]}" | /tools/arcanist/bin/arc call-conduit --conduit-uri https://iron.lily-is.land/ --conduit-token "$CONDUIT_TOKEN" -- harbormaster.sendmessage'
+
+.build:
+  stage: build
+  image:
+    name: ubuntu:24.04
+  script:
+    - apt-get update
+    - DEBIAN_FRONTEND=noninteractive apt-get -y upgrade
+    - DEBIAN_FRONTEND=noninteractive apt-get -y install cargo build-essential g++ libolm-dev libboost-json-dev wget cmake
+    # catch2 is broken in ubuntu, see https://bugs.launchpad.net/ubuntu/+source/catch2/+bug/2081647
+    - wget https://github.com/catchorg/Catch2/archive/v3.3.2.tar.gz -O catch2.tar.gz
+    - tar -xf catch2.tar.gz
+    - cd Catch2-*
+    - mkdir build && cd build && \
+    - cmake .. -DCATCH_ENABLE_WERROR=OFF -DBUILD_TESTING=OFF
+    - make -j$(($(nproc) / 2)) install
+    - cd ../..
+    - rm -rf Catch2-* catch2.tar.gz
+    - cd cpp
+    - mv -v build.rs build.rs.orig
+    - grep -v 'cargo::rerun-if-changed' build.rs.orig > build.rs
+    - make BUILD_TYPE="$BUILD_TYPE" test
+
+build:release:
+  extends:
+    - .build
+  before_script:
+    - BUILD_TYPE=release
+
+build:debug:
+  extends:
+    - .build
+  before_script:
+    - BUILD_TYPE=debug
+
+report-success:
+  extends: .report
+  rules:
+    - if: $TARGET_PHID
+      when: on_success
+    - when: never
+  stage: report
+  script:
+    - 'echo "{\"receiver\": \"$TARGET_PHID\", \"type\": \"pass\"}" | /tools/arcanist/bin/arc call-conduit --conduit-uri https://iron.lily-is.land/ --conduit-token "$CONDUIT_TOKEN" -- harbormaster.sendmessage'
+
+report-failure:
+  extends: .report
+  rules:
+    - if: $TARGET_PHID
+      when: on_failure
+    - when: never
+  stage: report
+  script:
+    - 'echo "{\"receiver\": \"$TARGET_PHID\", \"type\": \"fail\"}" | /tools/arcanist/bin/arc call-conduit --conduit-uri https://iron.lily-is.land/ --conduit-token "$CONDUIT_TOKEN" -- harbormaster.sendmessage'

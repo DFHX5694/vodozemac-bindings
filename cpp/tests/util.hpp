@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <vector>
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
 #include <olm/olm.h>
 
 inline std::array<uint8_t, 32> PICKLE_KEY = {};
@@ -20,7 +20,7 @@ inline std::vector<uint8_t> OLM_PICKLE_KEY = {0, 7, 2, 1};
 
 inline void check_olm_error(std::size_t code)
 {
-  EXPECT_NE(code, olm_error());
+  REQUIRE(code != olm_error());
 }
 
 template<class T>

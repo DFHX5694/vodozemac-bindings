@@ -52,34 +52,19 @@ $(SHARED_LIB_PREFIX).$(VERSION): $(STATIC_LIB)
 	cd .. && \
 	$(CXX) objects/*.o -shared -fPIC -Wl,-soname=$(SHARED_LIB_NAME) -o $(SHARED_LIB_PREFIX).$(VERSION)
 
-TEST_CXXFLAGS = -Wall -g -pthread -std=c++17 -lgtest_main \
- -lgtest -lolm -lboost_json -lpthread -I $(CXXBRIDGE_DIR) \
- -L $(TARGET_DIR) -l vodozemac -ldl -Wl,-rpath,$(TARGET_DIR)
+TEST_CXXFLAGS = -Wall -g -std=c++17 -I $(CXXBRIDGE_DIR)
+TEST_LDFLAGS = -lCatch2Main -lCatch2 -lolm -lboost_json \
+ -L $(TARGET_DIR) -l vodozemac -ldl -Wl,-rpath,$(TARGET_DIR) \
+ -L /usr/local/lib -Wl,-rpath,/usr/local/lib
 
 TEST_DEPS = $(SHARED_LIB_PREFIX).$(VERSION) tests/util.hpp
+TESTS = account-test session-test sas-test group-session-test
 
-account-test: $(TEST_DEPS) tests/account.cpp
-	$(CXX) $(TEST_CXXFLAGS) \
-	tests/account.cpp -o account-test
+%-test: tests/%.cpp $(TEST_DEPS)
+	$(CXX) $(TEST_CXXFLAGS) $< $(TEST_LDFLAGS) -o $@
 
-
-session-test: $(TEST_DEPS) tests/session.cpp
-	$(CXX) $(TEST_CXXFLAGS) \
-	tests/session.cpp -o session-test
-
-sas-test: $(TEST_DEPS) tests/sas.cpp
-	$(CXX) $(TEST_CXXFLAGS) \
-	tests/sas.cpp -o sas-test
-
-group-session-test: $(TEST_DEPS) tests/group_session.cpp
-	$(CXX) $(TEST_CXXFLAGS) \
-	tests/group_session.cpp -o group-session-test
-
-test: account-test session-test sas-test group-session-test
-	./account-test --gtest_color=yes
-	./session-test --gtest_color=yes
-	./sas-test --gtest_color=yes
-	./group-session-test --gtest_color=yes
+test: $(TESTS)
+	for i in $^; do ./$$i || exit 1; done
 
 install:
 	$(INSTALL) -d $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(LIBDIR)

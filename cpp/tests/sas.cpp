@@ -1,20 +1,20 @@
 #include "../../target/cxxbridge/vodozemac/src/lib.rs.h"
-#include "gtest/gtest.h"
+#include <catch2/catch_test_macros.hpp>
 
 using namespace rust;
 using namespace vodozemac;
 
-TEST(SasTest, Creation) {
+TEST_CASE("Creation", "[SasTest]") {
   auto alice = sas::new_sas();
   auto bob = sas::new_sas();
 
   auto alice_key = alice->public_key()->to_base64();
   auto bob_key = bob->public_key()->to_base64();
 
-  EXPECT_STRNE(alice_key.c_str(), bob_key.c_str());
+  REQUIRE(alice_key != bob_key);
 }
 
-TEST(SasTest, SharedSecret) {
+TEST_CASE("SharedSecret", "[SasTest]") {
   auto alice = sas::new_sas();
   auto bob = sas::new_sas();
 
@@ -25,7 +25,7 @@ TEST(SasTest, SharedSecret) {
   auto bob_established = bob->diffie_hellman(*alice_key);
 }
 
-TEST(SasTest, ShortAuthString) {
+TEST_CASE("ShortAuthString", "[SasTest]") {
   auto alice = sas::new_sas();
   auto bob = sas::new_sas();
 
@@ -38,11 +38,11 @@ TEST(SasTest, ShortAuthString) {
   auto alice_bytes = alice_established->bytes("");
   auto bob_bytes = bob_established->bytes("");
 
-  ASSERT_EQ(alice_bytes->emoji_indices(), bob_bytes->emoji_indices());
-  ASSERT_EQ(alice_bytes->decimals(), bob_bytes->decimals());
+  REQUIRE(alice_bytes->emoji_indices() == bob_bytes->emoji_indices());
+  REQUIRE(alice_bytes->decimals() == bob_bytes->decimals());
 }
 
-TEST(SasTest, CalculateMac) {
+TEST_CASE("CalculateMac", "[SasTest]") {
   auto alice = sas::new_sas();
   auto bob = sas::new_sas();
 
@@ -55,9 +55,9 @@ TEST(SasTest, CalculateMac) {
   auto alice_mac = alice_established->calculate_mac("Hello", "world");
   auto bob_mac = bob_established->calculate_mac("Hello", "world");
 
-  ASSERT_STREQ(alice_mac->to_base64().c_str(), bob_mac->to_base64().c_str());
+  REQUIRE(alice_mac->to_base64() == bob_mac->to_base64());
 
-  EXPECT_NO_THROW(alice_established->verify_mac("Hello", "world", *bob_mac));
-  EXPECT_NO_THROW(bob_established->verify_mac("Hello", "world", *alice_mac));
-  EXPECT_ANY_THROW(bob_established->verify_mac("", "", *alice_mac));
+  REQUIRE_NOTHROW(alice_established->verify_mac("Hello", "world", *bob_mac));
+  REQUIRE_NOTHROW(bob_established->verify_mac("Hello", "world", *alice_mac));
+  REQUIRE_THROWS(bob_established->verify_mac("", "", *alice_mac));
 }
