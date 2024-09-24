@@ -56,7 +56,7 @@ TEST_CASE("Pickle", "[SessionTest]") {
   auto [alice, bob, session] = create_session();
 
   auto pickle = session->pickle(PICKLE_KEY);
-  auto unpickled = olm::session_from_pickle(pickle, PICKLE_KEY);
+  auto unpickled = REQUIRE_VODOZEMAC_OK(MAYBE_NOEXCEPT(olm::session_from_pickle)(pickle, PICKLE_KEY));
 
   auto session_id = session->session_id();
   auto session2_id = unpickled->session_id();
@@ -100,7 +100,7 @@ TEST_CASE("PickleFromLibolm", "[SessionTest]") {
 }
 
 TEST_CASE("InvalidPickle", "[SessionTest]") {
-  REQUIRE_THROWS(olm::session_from_pickle("", PICKLE_KEY));
+  REQUIRE_VODOZEMAC_ERROR(MAYBE_NOEXCEPT(olm::session_from_pickle)("", PICKLE_KEY));
 }
 
 TEST_CASE("Encryption", "[SessionTest]") {
@@ -126,7 +126,7 @@ TEST_CASE("InvalidDecryption", "[SessionTest]") {
       "",
   };
 
-  REQUIRE_THROWS(olm::olm_message_from_parts(parts));
+  REQUIRE_VODOZEMAC_ERROR(MAYBE_NOEXCEPT(olm::olm_message_from_parts)(parts));
 }
 
 TEST_CASE("MultipleMessageDecryption", "[SessionTest]") {
@@ -148,7 +148,7 @@ TEST_CASE("MultipleMessageDecryption", "[SessionTest]") {
   plaintext = "Grumble grumble";
 
   message = bob_session->encrypt(plaintext);
-  decrypted = session->decrypt(*message);
+  decrypted = REQUIRE_VODOZEMAC_OK(session->MAYBE_NOEXCEPT(decrypt)(*message));
 
   REQUIRE(std::string(plaintext) == as_std_string(decrypted));
 }
@@ -189,5 +189,5 @@ TEST_CASE("PreKeyDoesNotMatch", "[SessionTest]") {
 }
 
 TEST_CASE("InvalidOneTimeKey", "[SessionTest]") {
-  REQUIRE_THROWS(types::curve_key_from_base64(""));
+  REQUIRE_VODOZEMAC_ERROR(MAYBE_NOEXCEPT(types::curve_key_from_base64)(""));
 }

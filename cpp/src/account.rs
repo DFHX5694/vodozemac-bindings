@@ -2,6 +2,8 @@ use super::{
     ffi::{InboundCreationResult, OlmMessageParts, OneTimeKey},
     Curve25519PublicKey, Ed25519PublicKey, Ed25519Signature, Session,
 };
+use vodozemac_maybe_derive::gen_noexcept;
+use crate::maybe::Maybe;
 
 pub struct OlmMessage(pub(crate) vodozemac::olm::OlmMessage);
 
@@ -16,6 +18,7 @@ impl OlmMessage {
     }
 }
 
+#[gen_noexcept]
 pub fn olm_message_from_parts(parts: &OlmMessageParts) -> Result<Box<OlmMessage>, anyhow::Error> {
     Ok(OlmMessage(vodozemac::olm::OlmMessage::from_parts(
         parts.message_type,
@@ -41,6 +44,7 @@ pub fn new_account() -> Box<Account> {
     Account(vodozemac::olm::Account::new()).into()
 }
 
+#[gen_noexcept]
 pub fn account_from_pickle(
     pickle: &str,
     pickle_key: &[u8; 32],
@@ -49,6 +53,7 @@ pub fn account_from_pickle(
     Ok(Account(vodozemac::olm::Account::from_pickle(pickle)).into())
 }
 
+#[gen_noexcept]
 pub fn account_from_libolm_pickle(
     pickle: &str,
     pickle_key: &[u8],
@@ -123,11 +128,12 @@ impl Account {
         self.0.max_number_of_one_time_keys()
     }
 
+    #[gen_noexcept]
     pub fn create_outbound_session(
         &self,
         identity_key: &Curve25519PublicKey,
         one_time_key: &Curve25519PublicKey,
-    ) -> Result<Box<Session>, vodozemac::KeyError> {
+    ) -> Result<Box<Session>, anyhow::Error> {
         let session = self
             .0
             .create_outbound_session(vodozemac::olm::SessionConfig::version_1(), identity_key.0, one_time_key.0);
@@ -135,6 +141,7 @@ impl Account {
         Ok(Box::new(Session(session)))
     }
 
+    #[gen_noexcept]
     pub fn create_inbound_session(
         &mut self,
         identity_key: &Curve25519PublicKey,

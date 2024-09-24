@@ -1,8 +1,10 @@
 #pragma once
 #include <random>
 #include <algorithm>
+#include <optional>
 #include <array>
 #include <vector>
+#include <functional>
 #include <catch2/catch_test_macros.hpp>
 #include <olm/olm.h>
 
@@ -29,6 +31,11 @@ template<class T>
   return std::string(range.begin(), range.end());
 }
 
+[[nodiscard]] inline std::string as_std_string(const char *cStr)
+{
+  return std::string(cStr);
+}
+
 std::pair<std::vector<uint8_t>, OlmAccount *> new_olm_account()
 {
   auto data = std::vector<uint8_t>(olm_account_size());
@@ -38,3 +45,52 @@ std::pair<std::vector<uint8_t>, OlmAccount *> new_olm_account()
 
   return {std::move(data), account};
 }
+
+#if VODOZEMAC_TEST_EXCEPTIONS
+#define MAYBE_NOEXCEPT(funcName) funcName
+
+template<class Func>
+inline auto require_vodozemac_ok(Func &&f)
+{
+    try {
+        return std::invoke(std::forward<Func>(f));
+    } catch (const std::exception &e) {
+        REQUIRE_NOTHROW(throw e);
+        // the following line is unreachable
+        std::abort();
+    }
+}
+
+template<class Func>
+inline std::string require_vodozemac_error(Func &&f)
+{
+    try {
+        std::invoke(std::forward<Func>(f));
+    } catch (const std::exception &e) {
+         return e.what();
+    }
+    FAIL("expects an exception");
+    return "";
+}
+#else
+#define MAYBE_NOEXCEPT(funcName) funcName##_noexcept
+
+template<class Func>
+inline auto require_vodozemac_ok(Func &&f)
+{
+    auto res = std::invoke(std::forward<Func>(f));
+    REQUIRE(res->has_value());
+    return res->take_value();
+}
+
+template<class Func>
+inline std::string require_vodozemac_error(Func &&f)
+{
+    auto res = std::invoke(std::forward<Func>(f));
+    REQUIRE(!res->has_value());
+    auto error = res->take_error();
+    return as_std_string(error);
+}
+#endif
+#define REQUIRE_VODOZEMAC_OK(...) require_vodozemac_ok([&] { return __VA_ARGS__; })
+#define REQUIRE_VODOZEMAC_ERROR(...) require_vodozemac_error([&] { return __VA_ARGS__; })

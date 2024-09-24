@@ -1,4 +1,6 @@
 use super::Curve25519PublicKey;
+use vodozemac_maybe_derive::gen_noexcept;
+use crate::maybe::Maybe;
 
 pub struct Sas {
     inner: Option<vodozemac::sas::Sas>,
@@ -20,6 +22,7 @@ impl Sas {
         Curve25519PublicKey(self.public_key).into()
     }
 
+    #[gen_noexcept]
     pub fn diffie_hellman(
         &mut self,
         other_public_key: &Curve25519PublicKey,
@@ -36,6 +39,7 @@ impl Sas {
 
 pub struct Mac(vodozemac::sas::Mac);
 
+#[gen_noexcept]
 pub fn mac_from_base64(mac: &str) -> Result<Box<Mac>, anyhow::Error> {
     Ok(Mac(vodozemac::sas::Mac::from_base64(mac)?).into())
 }
@@ -61,13 +65,14 @@ impl EstablishedSas {
         Mac(self.inner.calculate_mac(input, info)).into()
     }
 
+    #[gen_noexcept]
     pub fn verify_mac(
         &self,
         input: &str,
         info: &str,
         tag: &Mac,
-    ) -> Result<(), vodozemac::sas::SasError> {
-        self.inner.verify_mac(input, info, &tag.0)
+    ) -> Result<(), anyhow::Error> {
+        Ok(self.inner.verify_mac(input, info, &tag.0)?)
     }
 }
 

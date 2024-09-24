@@ -11,6 +11,8 @@ fn main() {
         "src/sas.rs",
         "src/session.rs",
         "src/types.rs",
+        "src/maybe.rs",
+        "vodozemac_maybe_derive/src/lib.rs",
     ];
 
     for source in sources {

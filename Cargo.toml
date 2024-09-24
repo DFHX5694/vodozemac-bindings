@@ -1,4 +1,5 @@
 [workspace]
 members = [
     "cpp",
+    "cpp/vodozemac_maybe_derive",
 ]

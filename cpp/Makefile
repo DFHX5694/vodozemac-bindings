@@ -19,7 +19,7 @@ SHARED_LIB_NAME = libvodozemac.so
 SHARED_LIB_PREFIX = $(TARGET_DIR)/$(SHARED_LIB_NAME)
 SHARED_LIBS = $(SHARED_LIB_PREFIX) $(SHARED_LIB_PREFIX).$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION)
 HEADER = $(CXXBRIDGE_DIR)/vodozemac/src/lib.rs.h
-SOURCES = src/account.rs src/group_sessions.rs src/lib.rs src/sas.rs src/session.rs src/types.rs build.rs
+SOURCES = src/account.rs src/group_sessions.rs src/lib.rs src/sas.rs src/session.rs src/types.rs src/maybe.rs build.rs vodozemac_maybe_derive/src/lib.rs
 
 AR ?= ar
 CXX ?= c++
@@ -32,6 +32,9 @@ PREFIX = /usr/local
 DESTDIR =
 LIBDIR = $(PREFIX)/lib
 INCLUDEDIR = $(PREFIX)/include
+
+src/lib.rs: src/lib.rs.in inject-maybe
+	./inject-maybe < src/lib.rs.in > src/lib.rs
 
 $(STATIC_LIB): $(SOURCES)
 	cargo build $(CARGO_ARGS)
@@ -58,10 +61,15 @@ TEST_LDFLAGS = -lCatch2Main -lCatch2 -lolm -lboost_json \
  -L /usr/local/lib -Wl,-rpath,/usr/local/lib
 
 TEST_DEPS = $(SHARED_LIB_PREFIX).$(VERSION) tests/util.hpp
-TESTS = account-test session-test sas-test group-session-test
+TESTS_EXCEPT = account-test session-test sas-test group-session-test
+TESTS_NOEXCEPT = $(TESTS_EXCEPT:-test=-noexcept-test)
+TESTS = $(TESTS_EXCEPT) $(TESTS_NOEXCEPT)
 
 %-test: tests/%.cpp $(TEST_DEPS)
-	$(CXX) $(TEST_CXXFLAGS) $< $(TEST_LDFLAGS) -o $@
+	$(CXX) $(TEST_CXXFLAGS) -DVODOZEMAC_TEST_EXCEPTIONS=1 -fexceptions $< $(TEST_LDFLAGS) -o $@
+
+%-noexcept-test: tests/%.cpp $(TEST_DEPS)
+	$(CXX) $(TEST_CXXFLAGS) -DVODOZEMAC_TEST_EXCEPTIONS=0 -fno-exceptions $< $(TEST_LDFLAGS) -o $@
 
 test: $(TESTS)
 	for i in $^; do ./$$i || exit 1; done

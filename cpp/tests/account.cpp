@@ -108,7 +108,7 @@ TEST_CASE("PickleTest", "[AccountTest]") {
 
   auto pickle = alice->pickle(PICKLE_KEY);
 
-  auto unpickled = olm::account_from_pickle(pickle, PICKLE_KEY);
+  auto unpickled = REQUIRE_VODOZEMAC_OK(MAYBE_NOEXCEPT(olm::account_from_pickle)(pickle, PICKLE_KEY));
 
   REQUIRE(alice->curve25519_key()->to_base64() ==
     unpickled->curve25519_key()->to_base64());
@@ -122,7 +122,7 @@ TEST_CASE("PickleFromLibolmTest", "[AccountTest]") {
   auto pickle = std::string(olm_pickle_account_length(alice), '\0');
   check_olm_error(olm_pickle_account(alice, OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size(), pickle.data(), pickle.size()));
 
-  auto unpickled = olm::account_from_libolm_pickle(pickle, Slice<const unsigned char>(OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size()));
+  auto unpickled = REQUIRE_VODOZEMAC_OK(MAYBE_NOEXCEPT(olm::account_from_libolm_pickle)(pickle, Slice<const unsigned char>(OLM_PICKLE_KEY.data(), OLM_PICKLE_KEY.size())));
 
   {
     auto identity_keys = std::string(olm_account_identity_keys_length(alice), '\0');
@@ -162,18 +162,18 @@ TEST_CASE("SignAndVerify", "[AccountTest]") {
   auto key = alice->ed25519_key();
   std::string str = "{}";
   auto signature = alice->sign(Str(str));
-  REQUIRE_NOTHROW(key->verify(Str(str), *signature));
+  REQUIRE_VODOZEMAC_OK(key->MAYBE_NOEXCEPT(verify)(Str(str), *signature));
   {
     auto cloned_signature = types::ed25519_signature_from_base64(signature->to_base64());
-    REQUIRE_NOTHROW(key->verify(Str(str), *cloned_signature));
+    REQUIRE_VODOZEMAC_OK(key->MAYBE_NOEXCEPT(verify)(Str(str), *cloned_signature));
   }
   {
     auto cloned_key = types::ed25519_key_from_base64(key->to_base64());
-    REQUIRE_NOTHROW(cloned_key->verify(Str(str), *signature));
+    REQUIRE_VODOZEMAC_OK(cloned_key->MAYBE_NOEXCEPT(verify)(Str(str), *signature));
   }
 
   std::string str2 = "{\"foo\": \"bar\"}";
   auto signature2 = alice->sign(Str(str2));
-  REQUIRE_THROWS(key->verify(Str(str2), *signature));
-  REQUIRE_THROWS(key->verify(Str(str), *signature2));
+  REQUIRE_VODOZEMAC_ERROR(key->MAYBE_NOEXCEPT(verify)(Str(str2), *signature));
+  REQUIRE_VODOZEMAC_ERROR(key->MAYBE_NOEXCEPT(verify)(Str(str), *signature2));
 }

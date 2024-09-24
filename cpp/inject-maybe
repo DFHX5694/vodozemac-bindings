@@ -1,0 +1,74 @@
+#!/usr/bin/env perl
+
+use strict;
+
+sub getMaybeTypeId
+{
+    my ($type) = @_;
+    if ($type eq '()') {
+        return 'MaybeOfNone';
+    }
+
+    for ($type) {
+        s/[^a-zA-Z0-9_]//g;
+        return "MaybeOf$_";
+    }
+};
+
+my %registeredTypes = ();
+
+sub genTypedef
+{
+    my ($type) = @_;
+    my $maybeType = getMaybeTypeId($type);
+    return "type $maybeType = Maybe<$type>;\n";
+}
+
+sub genMaybe
+{
+    my ($type) = @_;
+    my $maybeType = getMaybeTypeId($type);
+    return <<"EOF";
+    #[namespace = "vodozemac::maybe"]
+    extern "Rust" {
+        type $maybeType;
+        fn is_valid(self: &$maybeType) -> bool;
+        fn has_value(self: &$maybeType) -> bool;
+        fn take_value(self: &mut $maybeType) -> $type;
+        fn take_error(self: &mut $maybeType) -> String;
+    }
+EOF
+}
+
+my $funcName = '';
+my $funcDecl = '';
+
+my $output = '';
+
+while (<STDIN>) {
+    $output .= $_;
+    if (/fn ([a-z_0-9]+)\(/) {
+        $funcName = $1;
+        print STDERR "Func name: $funcName\n";
+        s/fn ([a-z_0-9]+)\(/fn ${1}_noexcept(/;
+        $funcDecl = $_;
+    } else {
+        $funcDecl .= $_;
+    }
+    if (/-> Result<(.+)>;/) {
+        my $type = $1;
+        my $maybeType = getMaybeTypeId($type);
+        print STDERR "Found result type: '$type' -> '$maybeType'\n";
+        $registeredTypes{$type} = 1;
+        s/-> Result<\Q$type\E>;/-> Box<$maybeType>;/ for $funcDecl;
+        $output .= $funcDecl;
+    }
+}
+
+my $generatedTypedef = join '', map genTypedef($_), keys(%registeredTypes);
+my $generatedMaybe = join '', map genMaybe($_), keys(%registeredTypes);
+
+s{// gen-typedef-place\n}{$generatedTypedef} for $output;
+s{// gen-maybe-place\n}{$generatedMaybe} for $output;
+
+print $output;

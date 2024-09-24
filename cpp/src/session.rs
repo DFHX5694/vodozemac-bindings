@@ -1,4 +1,6 @@
 use super::{ffi::SessionKeys, Curve25519PublicKey, OlmMessage};
+use vodozemac_maybe_derive::gen_noexcept;
+use crate::maybe::Maybe;
 
 pub struct Session(pub(crate) vodozemac::olm::Session);
 
@@ -15,6 +17,7 @@ impl Session {
         OlmMessage(self.0.encrypt(plaintext)).into()
     }
 
+    #[gen_noexcept]
     pub fn decrypt(&mut self, message: &OlmMessage) -> Result<Vec<u8>, anyhow::Error> {
         Ok(self.0.decrypt(&message.0)?)
     }
@@ -38,6 +41,7 @@ impl Session {
     }
 }
 
+#[gen_noexcept]
 pub fn session_from_pickle(
     pickle: &str,
     pickle_key: &[u8; 32],
@@ -46,6 +50,7 @@ pub fn session_from_pickle(
     Ok(Session(vodozemac::olm::Session::from_pickle(pickle)).into())
 }
 
+#[gen_noexcept]
 pub fn session_from_libolm_pickle(
     pickle: &str,
     pickle_key: &[u8],
