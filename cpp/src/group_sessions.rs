@@ -2,6 +2,7 @@ use super::ffi::DecryptedMessage;
 use anyhow::{anyhow, Result};
 use vodozemac_maybe_derive::gen_noexcept;
 use crate::maybe::Maybe;
+use std::error::Error;
 
 pub struct GroupSession(vodozemac::megolm::GroupSession);
 
@@ -88,6 +89,15 @@ pub fn group_session_from_libolm_pickle(pickle: &str, pickle_key: &[u8]) -> Resu
 
 pub struct InboundGroupSession(vodozemac::megolm::InboundGroupSession);
 
+#[derive(Debug)]
+struct InboundGroupSessionMergeError();
+impl Error for InboundGroupSessionMergeError {}
+impl std::fmt::Display for InboundGroupSessionMergeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "InboundGroupSessionMergeError")
+    }
+}
+
 pub fn new_inbound_group_session(session_key: &SessionKey) -> Box<InboundGroupSession> {
     InboundGroupSession::new(session_key).into()
 }
@@ -155,5 +165,15 @@ impl InboundGroupSession {
 
     pub fn pickle(&self, pickle_key: &[u8; 32]) -> String {
         self.0.pickle().encrypt(pickle_key)
+    }
+
+    #[gen_noexcept]
+    pub fn merge(&mut self, other: &mut InboundGroupSession) -> Result<Box<InboundGroupSession>> {
+        let merged = self.0.merge(&mut other.0);
+        if let Some(session) = merged {
+            Ok(Self(session).into())
+        } else {
+            Err(anyhow::Error::from(InboundGroupSessionMergeError()))
+        }
     }
 }

@@ -51,6 +51,14 @@ LibolmSessionCreationResult create_libolm_session() {
   return res;
 }
 
+void require_decrypt_to(
+  Box<megolm::InboundGroupSession> &sess,
+  const Box<megolm::MegolmMessage> &msg,
+  std::string expected_plain) {
+  auto decrypted = REQUIRE_VODOZEMAC_OK(sess->MAYBE_NOEXCEPT(decrypt)(*msg));
+  REQUIRE(std::string(decrypted.plaintext.begin(), decrypted.plaintext.end()) == expected_plain);
+}
+
 TEST_CASE("Creation", "[GroupSessionTest]") {
   auto [outbound, inbound] = create_session();
 
@@ -72,6 +80,37 @@ TEST_CASE("MessageIndex", "[GroupSessionTest]") {
 
   REQUIRE(outbound->message_index() == 1);
   REQUIRE(inbound2->first_known_index() == 1);
+}
+
+TEST_CASE("merging", "[GroupSessionTest]") {
+  auto r = create_session();
+  auto outbound = std::move(r.outbound);
+  auto initial_inbound = std::move(r.inbound);
+  auto encrypted_msg = outbound->encrypt("{}");
+  auto current_key = outbound->session_key();
+  auto encrypted_msg2 = outbound->encrypt(R"({"a":"b"})");
+
+  SECTION("merging the same session at different index") {
+    auto current_inbound = megolm::new_inbound_group_session(*current_key);
+    auto merge_res = REQUIRE_VODOZEMAC_OK(current_inbound->MAYBE_NOEXCEPT(merge)(*initial_inbound));
+    require_decrypt_to(merge_res, encrypted_msg, "{}");
+    require_decrypt_to(merge_res, encrypted_msg2, R"({"a":"b"})");
+  }
+
+  SECTION("merging a session with itself") {
+    auto current_inbound = megolm::new_inbound_group_session(*current_key);
+    auto current_inbound2 = megolm::new_inbound_group_session(*current_key);
+    auto merge_res = REQUIRE_VODOZEMAC_OK(current_inbound->MAYBE_NOEXCEPT(merge)(*current_inbound2));
+    require_decrypt_to(merge_res, encrypted_msg2, R"({"a":"b"})");
+    REQUIRE_VODOZEMAC_ERROR(merge_res->MAYBE_NOEXCEPT(decrypt)(*encrypted_msg));
+  }
+
+  SECTION("refuse to merge different sessions") {
+    auto diff_session = megolm::new_group_session();
+    auto diff_key = diff_session->session_key();
+    auto diff_inbound = megolm::new_inbound_group_session(*diff_key);
+    REQUIRE_VODOZEMAC_ERROR(initial_inbound->MAYBE_NOEXCEPT(merge)(*diff_inbound));
+  }
 }
 
 TEST_CASE("Pickle", "[GroupSessionTest]") {

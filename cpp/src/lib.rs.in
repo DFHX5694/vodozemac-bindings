@@ -204,6 +204,10 @@ mod ffi {
             message_index: u32,
         ) -> Result<Box<ExportedSessionKey>>;
         fn pickle(self: &InboundGroupSession, pickle_key: &[u8; 32]) -> String;
+        fn merge(
+            self: &mut InboundGroupSession,
+            other: &mut InboundGroupSession,
+        ) -> Result<Box<InboundGroupSession>>;
         fn inbound_group_session_from_pickle(
             pickle: &str,
             pickle_key: &[u8; 32],
