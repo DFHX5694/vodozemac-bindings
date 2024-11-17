@@ -8,8 +8,8 @@ else
 CARGO_ARGS =
 endif
 
-VERSION = 0.1.0
-SOVERSION = 1
+VERSION = 0.2.0
+SOVERSION = 2
 
 TARGET_DIR = ../target/$(BUILD_TYPE)
 CXXBRIDGE_DIR = $(TARGET_DIR)/../cxxbridge
