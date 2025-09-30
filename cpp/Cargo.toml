@@ -14,7 +14,7 @@ vodozemac_maybe_derive = { path = "./vodozemac_maybe_derive" }
 
 [dependencies.vodozemac]
 git = "https://github.com/matrix-org/vodozemac/"
-rev = "0.7.0"
+rev = "0.9.0"
 
 [build-dependencies]
 cxx-build = "1.0"

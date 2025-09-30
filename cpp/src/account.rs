@@ -12,7 +12,7 @@ impl OlmMessage {
         let (message_type, ciphertext) = self.0.clone().to_parts();
 
         OlmMessageParts {
-            ciphertext,
+            ciphertext: vodozemac::base64_encode(ciphertext),
             message_type,
         }
     }
@@ -22,7 +22,7 @@ impl OlmMessage {
 pub fn olm_message_from_parts(parts: &OlmMessageParts) -> Result<Box<OlmMessage>, anyhow::Error> {
     Ok(OlmMessage(vodozemac::olm::OlmMessage::from_parts(
         parts.message_type,
-        &parts.ciphertext,
+        vodozemac::base64_decode(&parts.ciphertext)?.as_slice(),
     )?)
     .into())
 }

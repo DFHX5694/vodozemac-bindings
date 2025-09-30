@@ -15,7 +15,8 @@ stages:
   script:
     - apt-get update
     - DEBIAN_FRONTEND=noninteractive apt-get -y upgrade
-    - DEBIAN_FRONTEND=noninteractive apt-get -y install cargo build-essential g++ libolm-dev libboost-json-dev wget cmake
+    - DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends rustup build-essential g++ libolm-dev libboost-json-dev wget cmake ca-certificates
+    - rustup default stable
     # catch2 is broken in ubuntu, see https://bugs.launchpad.net/ubuntu/+source/catch2/+bug/2081647
     - wget https://github.com/catchorg/Catch2/archive/v3.3.2.tar.gz -O catch2.tar.gz
     - tar -xf catch2.tar.gz
