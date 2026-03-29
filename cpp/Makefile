@@ -17,7 +17,12 @@ STATIC_LIB = $(TARGET_DIR)/libvodozemac.a
 ifeq ($(OS), Windows_NT)
 SHARED_LIB_NAME = libvodozemac.dll
 else
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+SHARED_LIB_NAME = libvodozemac.dylib
+else
 SHARED_LIB_NAME = libvodozemac.so
+endif
 endif
 SHARED_LIB_PREFIX = $(TARGET_DIR)/$(SHARED_LIB_NAME)
 SHARED_LIBS = $(SHARED_LIB_PREFIX) $(SHARED_LIB_PREFIX).$(VERSION) $(SHARED_LIB_PREFIX).$(SOVERSION)
@@ -27,6 +32,8 @@ SHARED_LIBS = $(SHARED_LIB_PREFIX) $(SHARED_LIB_PREFIX).$(VERSION) $(SHARED_LIB_
 # Unfortunately, the output format is really hostile to automatically generating the list on the fly.
 ifeq ($(OS), Windows_NT)
 SHARED_LIB_LDFLAGS = -lbcrypt -ladvapi32 -lstdc++ -lkernel32 -ladvapi32 -lntdll -luserenv -lws2_32 -lkernel32 -Wl,--out-implib,$(SHARED_LIB_PREFIX).a
+else ifeq ($(UNAME_S),Darwin)
+SHARED_LIB_LDFLAGS = -lc++
 else
 SHARED_LIB_LDFLAGS = -lstdc++ -lgcc_s -lutil -lrt -lpthread -lm -ldl -lc
 endif
@@ -64,7 +71,11 @@ $(SHARED_LIB_PREFIX): $(SHARED_LIB_PREFIX).$(SOVERSION)
 	$(LN) -sfv $(SHARED_LIB_NAME).$(SOVERSION) $(SHARED_LIB_PREFIX)
 
 $(SHARED_LIB_PREFIX).$(VERSION): $(STATIC_LIB)
+ifeq ($(UNAME_S),Darwin)
+	$(CXX) -Wl,-force_load,$(STATIC_LIB) $(SHARED_LIB_LDFLAGS) -dynamiclib -fPIC -Wl,-install_name,@rpath/$(SHARED_LIB_NAME).$(SOVERSION) -o $(SHARED_LIB_PREFIX).$(VERSION)
+else
 	$(CXX) -Wl,--whole-archive $(STATIC_LIB) -Wl,--no-whole-archive $(SHARED_LIB_LDFLAGS) -shared -fPIC -Wl,-soname=$(SHARED_LIB_NAME) -o $(SHARED_LIB_PREFIX).$(VERSION)
+endif
 
 TEST_CXXFLAGS = -Wall -g -std=c++17 -I $(CXXBRIDGE_DIR)
 TEST_LDFLAGS = -lCatch2Main -lCatch2 -lolm -lboost_json \
