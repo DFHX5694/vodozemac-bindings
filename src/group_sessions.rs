@@ -1,7 +1,5 @@
 use super::ffi::DecryptedMessage;
 use anyhow::{anyhow, Result};
-use vodozemac_maybe_derive::gen_noexcept;
-use crate::maybe::Maybe;
 use std::error::Error;
 
 pub struct GroupSession(vodozemac::megolm::GroupSession);
@@ -12,7 +10,7 @@ pub fn new_group_session() -> Box<GroupSession> {
 
 pub struct MegolmMessage(vodozemac::megolm::MegolmMessage);
 
-#[gen_noexcept]
+
 pub fn megolm_message_from_base64(message: &str) -> Result<Box<MegolmMessage>> {
     Ok(MegolmMessage(vodozemac::megolm::MegolmMessage::from_base64(message)?).into())
 }
@@ -25,7 +23,7 @@ impl MegolmMessage {
 
 pub struct SessionKey(vodozemac::megolm::SessionKey);
 
-#[gen_noexcept]
+
 pub fn session_key_from_base64(message: &str) -> Result<Box<SessionKey>> {
     Ok(SessionKey(vodozemac::megolm::SessionKey::from_base64(message)?).into())
 }
@@ -38,7 +36,7 @@ impl SessionKey {
 
 pub struct ExportedSessionKey(vodozemac::megolm::ExportedSessionKey);
 
-#[gen_noexcept]
+
 pub fn exported_session_key_from_base64(message: &str) -> Result<Box<ExportedSessionKey>> {
     Ok(ExportedSessionKey(vodozemac::megolm::ExportedSessionKey::from_base64(message)?).into())
 }
@@ -75,13 +73,13 @@ impl GroupSession {
     }
 }
 
-#[gen_noexcept]
+
 pub fn group_session_from_pickle(pickle: &str, pickle_key: &[u8; 32]) -> Result<Box<GroupSession>> {
     let pickle = vodozemac::megolm::GroupSessionPickle::from_encrypted(pickle, pickle_key)?;
     Ok(GroupSession(vodozemac::megolm::GroupSession::from_pickle(pickle)).into())
 }
 
-#[gen_noexcept]
+
 pub fn group_session_from_libolm_pickle(pickle: &str, pickle_key: &[u8]) -> Result<Box<GroupSession>> {
     let res = vodozemac::megolm::GroupSession::from_libolm_pickle(pickle, pickle_key)?;
     Ok(GroupSession(res).into())
@@ -106,7 +104,7 @@ pub fn import_inbound_group_session(session_key: &ExportedSessionKey) -> Box<Inb
     InboundGroupSession::import(session_key).into()
 }
 
-#[gen_noexcept]
+
 pub fn inbound_group_session_from_pickle(
     pickle: &str,
     pickle_key: &[u8; 32],
@@ -115,7 +113,7 @@ pub fn inbound_group_session_from_pickle(
     Ok(InboundGroupSession(vodozemac::megolm::InboundGroupSession::from_pickle(pickle)).into())
 }
 
-#[gen_noexcept]
+
 pub fn inbound_group_session_from_libolm_pickle(
     pickle: &str,
     pickle_key: &[u8],
@@ -144,7 +142,7 @@ impl InboundGroupSession {
         self.0.first_known_index()
     }
 
-    #[gen_noexcept]
+    
     pub fn export_at(&mut self, index: u32) -> Result<Box<ExportedSessionKey>> {
         self.0
             .export_at(index)
@@ -153,7 +151,7 @@ impl InboundGroupSession {
             .ok_or_else(|| anyhow!("Unknown message index"))
     }
 
-    #[gen_noexcept]
+    
     pub fn decrypt(&mut self, message: &MegolmMessage) -> Result<DecryptedMessage> {
         let ret = self.0.decrypt(&message.0)?;
 
@@ -167,7 +165,7 @@ impl InboundGroupSession {
         self.0.pickle().encrypt(pickle_key)
     }
 
-    #[gen_noexcept]
+    
     pub fn merge(&mut self, other: &mut InboundGroupSession) -> Result<Box<InboundGroupSession>> {
         let merged = self.0.merge(&mut other.0);
         if let Some(session) = merged {

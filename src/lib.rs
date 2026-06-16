@@ -3,64 +3,42 @@ mod group_sessions;
 mod sas;
 mod session;
 mod types;
-mod maybe;
 
 use account::{
     account_from_pickle,
-    account_from_pickle_noexcept,
     account_from_libolm_pickle,
-    account_from_libolm_pickle_noexcept,
     new_account,
     olm_message_from_parts,
-    olm_message_from_parts_noexcept,
     Account, OlmMessage, OneTimeKeyGenerationResult};
 use group_sessions::{
     exported_session_key_from_base64,
-    exported_session_key_from_base64_noexcept,
     group_session_from_pickle,
-    group_session_from_pickle_noexcept,
     group_session_from_libolm_pickle,
-    group_session_from_libolm_pickle_noexcept,
     import_inbound_group_session,
     inbound_group_session_from_pickle,
-    inbound_group_session_from_pickle_noexcept,
     inbound_group_session_from_libolm_pickle,
-    inbound_group_session_from_libolm_pickle_noexcept,
     megolm_message_from_base64,
-    megolm_message_from_base64_noexcept,
     new_group_session,
     new_inbound_group_session,
     session_key_from_base64,
-    session_key_from_base64_noexcept,
     ExportedSessionKey, GroupSession,
     InboundGroupSession, MegolmMessage, SessionKey,
 };
 use sas::{
     mac_from_base64,
-    mac_from_base64_noexcept,
     new_sas, EstablishedSas, Mac, Sas, SasBytes};
 use session::{
     session_from_pickle,
-    session_from_pickle_noexcept,
     session_from_libolm_pickle,
-    session_from_libolm_pickle_noexcept,
     Session
 };
 use types::{
     curve_key_from_base64,
-    curve_key_from_base64_noexcept,
     ed25519_key_from_base64,
-    ed25519_key_from_base64_noexcept,
     ed25519_signature_from_base64,
-    ed25519_signature_from_base64_noexcept,
     Curve25519PublicKey, Ed25519PublicKey,
     Ed25519Signature,
 };
-use maybe::Maybe;
-use crate::ffi::InboundCreationResult;
-use crate::ffi::DecryptedMessage;
-
-// gen-typedef-place
 
 #[cxx::bridge]
 mod ffi {

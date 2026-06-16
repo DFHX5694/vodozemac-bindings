@@ -1,5 +1,16 @@
-[workspace]
-members = [
-    "cpp",
-    "cpp/vodozemac_maybe_derive",
-]
+[package]
+name = "vodozemac-cpp"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "vodozemac"
+crate-type = ["staticlib"]
+
+[dependencies]
+anyhow = "1.0"
+cxx = "1.0"
+vodozemac = "0.10.0"
+
+[build-dependencies]
+cxx-build = "1.0"

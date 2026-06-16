@@ -1,6 +1,3 @@
-use vodozemac_maybe_derive::gen_noexcept;
-use crate::maybe::Maybe;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Curve25519PublicKey(pub(crate) vodozemac::Curve25519PublicKey);
 
@@ -15,7 +12,7 @@ impl Curve25519PublicKey {
     }
 }
 
-#[gen_noexcept]
+
 pub fn curve_key_from_base64(key: &str) -> Result<Box<Curve25519PublicKey>, anyhow::Error> {
     Curve25519PublicKey::from_base64(key)
 }
@@ -33,13 +30,13 @@ impl Ed25519PublicKey {
         self.0.to_base64()
     }
 
-    #[gen_noexcept]
+    
     pub fn verify(&self, message: &str, signature: &Ed25519Signature) -> Result<(), anyhow::Error> {
         Ok(self.0.verify(message.as_bytes(), &signature.0)?)
     }
 }
 
-#[gen_noexcept]
+
 pub fn ed25519_key_from_base64(key: &str) -> Result<Box<Ed25519PublicKey>, anyhow::Error> {
     Ed25519PublicKey::from_base64(key)
 }
@@ -58,7 +55,7 @@ impl Ed25519Signature {
     }
 }
 
-#[gen_noexcept]
+
 pub fn ed25519_signature_from_base64(key: &str) -> Result<Box<Ed25519Signature>, anyhow::Error> {
     Ed25519Signature::from_base64(key)
 }
