@@ -1,4 +1,5 @@
 use super::Curve25519PublicKey;
+
 pub struct Sas {
     inner: Option<vodozemac::sas::Sas>,
     public_key: vodozemac::Curve25519PublicKey,
@@ -19,7 +20,6 @@ impl Sas {
         Curve25519PublicKey(self.public_key).into()
     }
 
-    
     pub fn diffie_hellman(
         &mut self,
         other_public_key: &Curve25519PublicKey,
@@ -36,7 +36,6 @@ impl Sas {
 
 pub struct Mac(vodozemac::sas::Mac);
 
-
 pub fn mac_from_base64(mac: &str) -> Result<Box<Mac>, anyhow::Error> {
     Ok(Mac(vodozemac::sas::Mac::from_base64(mac)?).into())
 }
@@ -52,17 +51,28 @@ pub struct EstablishedSas {
 }
 
 impl EstablishedSas {
+    pub fn our_public_key(&self) -> Box<Curve25519PublicKey> {
+        Curve25519PublicKey(self.inner.our_public_key()).into()
+    }
+
+    pub fn their_public_key(&self) -> Box<Curve25519PublicKey> {
+        Curve25519PublicKey(self.inner.their_public_key()).into()
+    }
+
     pub fn bytes(&self, info: &str) -> Box<SasBytes> {
         Box::new(SasBytes {
             inner: self.inner.bytes(info),
         })
     }
 
+    pub fn bytes_raw(&self, info: &str, count: usize) -> Result<Vec<u8>, anyhow::Error> {
+        Ok(self.inner.bytes_raw(info, count)?)
+    }
+
     pub fn calculate_mac(&self, input: &str, info: &str) -> Box<Mac> {
         Mac(self.inner.calculate_mac(input, info)).into()
     }
 
-    
     pub fn verify_mac(
         &self,
         input: &str,
@@ -86,5 +96,9 @@ impl SasBytes {
         let (first, second, third) = self.inner.decimals();
 
         [first, second, third]
+    }
+
+    pub fn as_bytes(&self) -> [u8; 6] {
+        *self.inner.as_bytes()
     }
 }

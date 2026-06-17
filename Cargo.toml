@@ -10,7 +10,7 @@ crate-type = ["staticlib"]
 [dependencies]
 anyhow = "1.0"
 cxx = "1.0"
-vodozemac = "0.10.0"
+vodozemac = { version = "0.10.0", features = ["low-level-api", "experimental-session-config"] }
 
 [build-dependencies]
 cxx-build = "1.0"

@@ -1,1 +1,3 @@
 target/
+subprojects/*
+!subprojects/*.wrap

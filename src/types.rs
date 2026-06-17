@@ -12,7 +12,6 @@ impl Curve25519PublicKey {
     }
 }
 
-
 pub fn curve_key_from_base64(key: &str) -> Result<Box<Curve25519PublicKey>, anyhow::Error> {
     Curve25519PublicKey::from_base64(key)
 }
@@ -30,12 +29,18 @@ impl Ed25519PublicKey {
         self.0.to_base64()
     }
 
-    
     pub fn verify(&self, message: &str, signature: &Ed25519Signature) -> Result<(), anyhow::Error> {
         Ok(self.0.verify(message.as_bytes(), &signature.0)?)
     }
-}
 
+    pub fn verify_bytes(
+        &self,
+        message: &[u8],
+        signature: &Ed25519Signature,
+    ) -> Result<(), anyhow::Error> {
+        Ok(self.0.verify(message, &signature.0)?)
+    }
+}
 
 pub fn ed25519_key_from_base64(key: &str) -> Result<Box<Ed25519PublicKey>, anyhow::Error> {
     Ed25519PublicKey::from_base64(key)
@@ -54,7 +59,6 @@ impl Ed25519Signature {
         self.0.to_base64()
     }
 }
-
 
 pub fn ed25519_signature_from_base64(key: &str) -> Result<Box<Ed25519Signature>, anyhow::Error> {
     Ed25519Signature::from_base64(key)

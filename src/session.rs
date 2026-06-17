@@ -1,4 +1,10 @@
-use super::{ffi::SessionKeys, Curve25519PublicKey, OlmMessage};
+use super::{
+    config::{from_olm_config},
+    ffi::{OlmSessionConfig as FfiOlmSessionConfig, SessionKeys},
+    Curve25519PublicKey, OlmMessage,
+};
+use anyhow::Result;
+
 pub struct Session(pub(crate) vodozemac::olm::Session);
 
 impl Session {
@@ -10,12 +16,15 @@ impl Session {
         self.0.pickle().encrypt(pickle_key)
     }
 
-    pub fn encrypt(&mut self, plaintext: &str) -> Box<OlmMessage> {
-        OlmMessage(self.0.encrypt(plaintext).expect("encrypt failed")).into()
+    pub fn encrypt(&mut self, plaintext: &str) -> Result<Box<OlmMessage>> {
+        Ok(OlmMessage(self.0.encrypt(plaintext)?).into())
     }
 
-    
-    pub fn decrypt(&mut self, message: &OlmMessage) -> Result<Vec<u8>, anyhow::Error> {
+    pub fn encrypt_bytes(&mut self, plaintext: &[u8]) -> Result<Box<OlmMessage>> {
+        Ok(OlmMessage(self.0.encrypt(plaintext)?).into())
+    }
+
+    pub fn decrypt(&mut self, message: &OlmMessage) -> Result<Vec<u8>> {
         Ok(self.0.decrypt(&message.0)?)
     }
 
@@ -29,6 +38,8 @@ impl Session {
         }
     }
 
+    /// Returns true if the given pre-key message was encrypted using the same
+    /// session keys as this session. Normal Olm messages always return false.
     pub fn session_matches(&self, message: &OlmMessage) -> bool {
         if let vodozemac::olm::OlmMessage::PreKey(m) = &message.0 {
             self.0.session_keys() == m.session_keys()
@@ -36,22 +47,30 @@ impl Session {
             false
         }
     }
+
+    pub fn has_received_message(&self) -> bool {
+        self.0.has_received_message()
+    }
+
+    pub fn session_config(&self) -> FfiOlmSessionConfig {
+        from_olm_config(self.0.session_config()).into()
+    }
 }
 
+pub fn session_keys_session_id(keys: &SessionKeys) -> String {
+    let session_keys = vodozemac::olm::SessionKeys {
+        identity_key: keys.identity_key.0,
+        base_key: keys.base_key.0,
+        one_time_key: keys.one_time_key.0,
+    };
+    session_keys.session_id()
+}
 
-pub fn session_from_pickle(
-    pickle: &str,
-    pickle_key: &[u8; 32],
-) -> Result<Box<Session>, anyhow::Error> {
+pub fn session_from_pickle(pickle: &str, pickle_key: &[u8; 32]) -> Result<Box<Session>> {
     let pickle = vodozemac::olm::SessionPickle::from_encrypted(pickle, pickle_key)?;
     Ok(Session(vodozemac::olm::Session::from_pickle(pickle)).into())
 }
 
-
-pub fn session_from_libolm_pickle(
-    pickle: &str,
-    pickle_key: &[u8],
-) -> Result<Box<Session>, anyhow::Error> {
-    let res = vodozemac::olm::Session::from_libolm_pickle(pickle, pickle_key)?;
-    Ok(Session(res).into())
+pub fn session_from_libolm_pickle(pickle: &str, pickle_key: &[u8]) -> Result<Box<Session>> {
+    Ok(Session(vodozemac::olm::Session::from_libolm_pickle(pickle, pickle_key)?).into())
 }
