@@ -10,6 +10,7 @@ cargo = find_program('cargo', required: true)
 
 project_source = meson.current_source_dir()
 cargo_target_dir = meson.current_build_dir() / 'cargo'
+cxxbridge_inc = cargo_target_dir / 'cxxbridge'
 
 cargo_env = environment()
 cargo_env.set('CARGO_TARGET_DIR', cargo_target_dir)
@@ -52,7 +53,7 @@ vodozemac_build = custom_target(
 
 vodozemac_dep = declare_dependency(
   link_args: [lib_path] + rust_syslibs,
-  include_directories: include_directories('cargo' / 'cxxbridge'),
+  compile_args: ['-I' + cxxbridge_inc],
   sources: vodozemac_build,
 )
 
