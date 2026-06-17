@@ -52,7 +52,7 @@ vodozemac_build = custom_target(
 
 vodozemac_dep = declare_dependency(
   link_args: [lib_path] + rust_syslibs,
-  include_directories: include_directories(cargo_target_dir / 'cxxbridge'),
+  include_directories: include_directories('cargo' / 'cxxbridge'),
   sources: vodozemac_build,
 )
 
