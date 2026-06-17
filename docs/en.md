@@ -17,8 +17,8 @@ Meson selects the Rust target and static library name from the **C++ compiler**,
 
 | C++ toolchain | Rust target | Static library |
 |---------------|-------------|----------------|
-| MSVC / clang-cl (`get_argument_syntax() == 'msvc'`) | `x86_64-pc-windows-msvc` (default) | `target/release/vodozemac.lib` |
-| MinGW GCC (e.g. MSYS2 UCRT64) | `x86_64-pc-windows-gnu` | `target/x86_64-pc-windows-gnu/release/libvodozemac.a` |
+| MSVC / clang-cl (`get_argument_syntax() == 'msvc'`) | `x86_64-pc-windows-msvc` (default) | `<build>/cargo/release/vodozemac.lib` |
+| MinGW GCC (e.g. MSYS2 UCRT64) | `x86_64-pc-windows-gnu` | `<build>/cargo/x86_64-pc-windows-gnu/release/libvodozemac.a` |
 
 For MinGW builds you also need the Rust GNU target:
 
@@ -31,6 +31,8 @@ Meson configures the GNU linker automatically when it detects GCC on Windows.
 ### Linux / macOS
 
 Default `cargo build --release` produces `target/release/libvodozemac.a`.
+
+When built through Meson (standalone or as a subproject), Cargo output goes under **this project's Meson build directory** (`<build>/cargo/`), not the source tree. Cargo is invoked with `--manifest-path` so it works regardless of the parent project's build directory.
 
 ## Building
 
@@ -101,7 +103,7 @@ Include the generated cxx bridge header:
 #include "vodozemac/src/lib.rs.h"
 ```
 
-Meson exposes `target/cxxbridge` as an include directory and links the static library built by Cargo. On MinGW, required Windows system libraries (`ws2_32`, `bcrypt`, etc.) are added automatically.
+Meson exposes `<build>/cargo/cxxbridge` as an include directory and links the static library built by Cargo. On MinGW, required Windows system libraries (`ws2_32`, `bcrypt`, etc.) are added automatically.
 
 ### Manual Cargo build
 
@@ -122,7 +124,7 @@ cargo build --release --target x86_64-pc-windows-gnu
 
 ## API overview
 
-All types live in generated header `target/cxxbridge/vodozemac/src/lib.rs.h` (path relative to project root after build).
+All types live in generated header `<build>/cargo/cxxbridge/vodozemac/src/lib.rs.h` after a Meson build (or `target/cxxbridge/...` after a manual `cargo build`).
 
 | Namespace | Purpose |
 |-----------|---------|
